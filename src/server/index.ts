@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from './config/db';
 import { userService } from './services/userService';
+import { workspaceService } from './services/workspaceService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -98,6 +99,44 @@ connectDB().then(() => {
       });
     } catch (error) {
       res.status(401).json({ error: 'Geçersiz token' });
+    }
+  });
+
+  // Workspace endpoints
+  app.post('/api/workspaces', async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const workspace = await workspaceService.createWorkspace(req.body, userId);
+      res.status(201).json(workspace);
+    } catch (error) {
+      res.status(500).json({ error: 'Mekan eklenirken bir hata oluştu' });
+    }
+  });
+
+  app.get('/api/workspaces/pending', async (req, res) => {
+    try {
+      const workspaces = await workspaceService.getWorkspaces('pending');
+      res.json(workspaces);
+    } catch (error) {
+      res.status(500).json({ error: 'Mekanlar yüklenirken bir hata oluştu' });
+    }
+  });
+
+  app.post('/api/workspaces/:id/approve', async (req, res) => {
+    try {
+      const workspace = await workspaceService.approveWorkspace(req.params.id, req.body.adminId);
+      res.json(workspace);
+    } catch (error) {
+      res.status(500).json({ error: 'Onaylama işlemi başarısız oldu' });
+    }
+  });
+
+  app.post('/api/workspaces/:id/reject', async (req, res) => {
+    try {
+      const workspace = await workspaceService.rejectWorkspace(req.params.id);
+      res.json(workspace);
+    } catch (error) {
+      res.status(500).json({ error: 'Reddetme işlemi başarısız oldu' });
     }
   });
 
