@@ -78,9 +78,9 @@ const MainScreen: React.FC = () => {
 
   const filterWorkspaces = (workspace: any) => {
     return (
-      workspace.features.wifi >= filters.wifi &&
-      workspace.features.quiet >= filters.quiet &&
-      workspace.features.power >= filters.power
+      workspace.ratings.wifi >= filters.wifi &&
+      workspace.ratings.quiet >= filters.quiet &&
+      workspace.ratings.power >= filters.power
     );
   };
 
@@ -152,7 +152,7 @@ const MainScreen: React.FC = () => {
             type="primary" 
             size={isMobile ? 'large' : 'middle'} 
             block
-            onClick={() => navigate('/map', { state: { location, filters: {} } })}
+            onClick={() => navigate('/map', { state: { location, filters } })}
           >
             Mekanları Göster
           </Button>
@@ -175,41 +175,38 @@ const MainScreen: React.FC = () => {
                     </Tag>
                   </Space>
                 }
-                description={workspace.address}
+                description={workspace.address.fullAddress}
               />
               <Space size="large">
                 <Space>
                   <WifiOutlined />
-                  <Rate disabled defaultValue={workspace.features.wifi} count={10} />
+                  <Rate disabled defaultValue={workspace.ratings.wifi} count={10} />
                 </Space>
                 <Space>
                   <SoundOutlined />
-                  <Rate disabled defaultValue={workspace.features.quiet} count={10} />
+                  <Rate disabled defaultValue={workspace.ratings.quiet} count={10} />
                 </Space>
                 <Space>
                   <ThunderboltOutlined />
-                  <Rate disabled defaultValue={workspace.features.power} count={10} />
+                  <Rate disabled defaultValue={workspace.ratings.power} count={10} />
                 </Space>
                 <Button 
-  type="primary"
-  onClick={() => {
-    navigate('/map', { 
-      state: { 
-        location: {
-          label: workspace.name,
-          value: workspace._id,
-          coordinates: {
-            lat: workspace.coordinates.lat,
-            lng: workspace.coordinates.lng
-          }
-        },
-        filters: filters // Mevcut filtreleri de gönderebiliriz
-      } 
-    });
-  }}
->
-  Haritada Göster
-</Button>
+                  type="primary"
+                  onClick={() => {
+                    navigate('/map', { 
+                      state: { 
+                        location: {
+                          label: workspace.name,
+                          value: workspace._id,
+                          coordinates: workspace.address.coordinates
+                        },
+                        filters
+                      } 
+                    });
+                  }}
+                >
+                  Haritada Göster
+                </Button>
               </Space>
             </List.Item>
           )}
@@ -217,7 +214,7 @@ const MainScreen: React.FC = () => {
       </Card>
 
       {!isLoggedIn && (
-        <Card style={{ textAlign: 'center' }}>
+        <Card style={{ textAlign: 'center', marginTop: '24px' }}>
           <Title level={4}>Favori mekanlarınızı kaydetmek için giriş yapın</Title>
           <Button type="primary" onClick={() => navigate('/profile')}>
             Giriş Yap / Kayıt Ol

@@ -47,16 +47,46 @@ const AddWorkspacePage: React.FC = () => {
           createdAt: new Date()
         },
         status: user?.role === 'admin' ? 'approved' : 'pending',
-        addressId: addressResponse.data._id,
-        categories: values.categories
+        addressId: addressResponse.data._id
       };
 
-      console.log('Workspace data:', workspaceData); // Debug için
-
       // Workspace'i kaydet
-      const response = await axios.post(
+      const workspaceResponse = await axios.post(
         'http://localhost:5000/api/workspaces',
         workspaceData,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Rating'leri hazırla
+      const baseRatings = {
+        wifi: values.categories.wifi || 0,
+        quiet: values.categories.quiet || 0,
+        power: values.categories.power || 0,
+        cleanliness: values.categories.cleanliness || 0
+      };
+
+      const specificRatings = values.type === 'cafe' 
+        ? { taste: values.categories.taste || 0 }
+        : {
+            resources: values.categories.resources || 0,
+            computers: values.categories.computers || 0
+          };
+
+      // Rating'leri kaydet
+      const ratingData = {
+        workspaceId: workspaceResponse.data._id,
+        type: values.type,
+        categories: {
+          ...baseRatings,
+          ...specificRatings
+        }
+      };
+
+      await axios.post(
+        'http://localhost:5000/api/ratings',
+        ratingData,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
