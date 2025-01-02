@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Card, Typography, Button, Row, Col, Select, Space, InputNumber, AutoComplete } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Button, Row, Col, Select, Space, InputNumber, AutoComplete, List, Rate, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { EnvironmentOutlined, WifiOutlined, SoundOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import AppLayout from '../components/Layout/AppLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from 'react-responsive';
+import axios from 'axios';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
@@ -24,6 +25,13 @@ const MainScreen: React.FC = () => {
   const [location, setLocation] = useState<LocationType | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const isMobile = useMediaQuery({ maxWidth: 768 });
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    wifi: 3,
+    quiet: 3,
+    power: 3
+  });
 
   // Konum önerileri için örnek veri
   const locationOptions = [
@@ -51,6 +59,29 @@ const MainScreen: React.FC = () => {
         }
       );
     }
+  };
+
+  useEffect(() => {
+    fetchWorkspaces();
+  }, []);
+
+  const fetchWorkspaces = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/workspaces/approved');
+      setWorkspaces(response.data);
+    } catch (error) {
+      console.error('Mekanlar yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterWorkspaces = (workspace: any) => {
+    return (
+      workspace.features.wifi >= filters.wifi &&
+      workspace.features.quiet >= filters.quiet &&
+      workspace.features.power >= filters.power
+    );
   };
 
   return (
@@ -98,17 +129,20 @@ const MainScreen: React.FC = () => {
           </Row>
 
           <Row gutter={[16, 16]}>
-            {['WiFi', 'Sessizlik', 'Priz'].map((item, index) => (
-              <Col span={isMobile ? 24 : 8} key={index}>
+            {[
+              { key: 'wifi', icon: <WifiOutlined />, label: 'WiFi' },
+              { key: 'quiet', icon: <SoundOutlined />, label: 'Sessizlik' },
+              { key: 'power', icon: <ThunderboltOutlined />, label: 'Priz' }
+            ].map((item) => (
+              <Col span={isMobile ? 24 : 8} key={item.key}>
                 <InputNumber
                   min={0}
                   max={10}
-                  defaultValue={3}
+                  value={filters[item.key as keyof typeof filters]}
                   style={{ width: '100%' }}
-                  addonBefore={index === 0 ? <WifiOutlined /> : 
-                              index === 1 ? <SoundOutlined /> : 
-                              <ThunderboltOutlined />}
-                  addonAfter={item}
+                  addonBefore={item.icon}
+                  addonAfter={item.label}
+                  onChange={(value) => setFilters(prev => ({ ...prev, [item.key]: value ?? 0 }))}
                 />
               </Col>
             ))}
@@ -123,6 +157,63 @@ const MainScreen: React.FC = () => {
             Mekanları Göster
           </Button>
         </Space>
+      </Card>
+
+      <Card style={{ marginTop: '24px', borderRadius: '12px' }}>
+        <List
+          loading={loading}
+          itemLayout="horizontal"
+          dataSource={workspaces.filter(filterWorkspaces)}
+          renderItem={(workspace) => (
+            <List.Item>
+              <List.Item.Meta
+                title={
+                  <Space>
+                    {workspace.name}
+                    <Tag color={workspace.type === 'cafe' ? 'blue' : 'green'}>
+                      {workspace.type === 'cafe' ? 'Kafe' : 'Kütüphane'}
+                    </Tag>
+                  </Space>
+                }
+                description={workspace.address}
+              />
+              <Space size="large">
+                <Space>
+                  <WifiOutlined />
+                  <Rate disabled defaultValue={workspace.features.wifi} count={10} />
+                </Space>
+                <Space>
+                  <SoundOutlined />
+                  <Rate disabled defaultValue={workspace.features.quiet} count={10} />
+                </Space>
+                <Space>
+                  <ThunderboltOutlined />
+                  <Rate disabled defaultValue={workspace.features.power} count={10} />
+                </Space>
+                <Button 
+  type="primary"
+  onClick={() => {
+    navigate('/map', { 
+      state: { 
+        location: {
+          label: workspace.name,
+          value: workspace._id,
+          coordinates: {
+            lat: workspace.coordinates.lat,
+            lng: workspace.coordinates.lng
+          }
+        },
+        filters: filters // Mevcut filtreleri de gönderebiliriz
+      } 
+    });
+  }}
+>
+  Haritada Göster
+</Button>
+              </Space>
+            </List.Item>
+          )}
+        />
       </Card>
 
       {!isLoggedIn && (

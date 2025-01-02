@@ -25,7 +25,7 @@ const AddWorkspacePage: React.FC = () => {
         'http://localhost:5000/api/workspaces',
         {
           ...values,
-          userId: user?._id,
+          createdBy: user?._id,
           status: user?.role === 'admin' ? 'approved' : 'pending'
         },
         {
@@ -105,7 +105,9 @@ const AddWorkspacePage: React.FC = () => {
           lat: location.lat,
           lng: location.lng
         },
-        address: location.address // Otomatik adres doldurma
+        //otomatik adres doldurma
+        address: location.address,
+        name: location.name
       });
     }}
     initialLocation={form.getFieldValue(['coordinates'])}

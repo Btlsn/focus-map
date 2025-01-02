@@ -12,8 +12,10 @@ const AdminPage: React.FC = () => {
   const fetchPendingWorkspaces = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/workspaces/pending');
+      console.log('Pending workspaces:', JSON.stringify(response.data, null, 2));
       setPendingWorkspaces(response.data);
     } catch (error) {
+      console.error('Mekanlar yüklenirken hata:', error);
       message.error('Mekanlar yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -62,8 +64,10 @@ const AdminPage: React.FC = () => {
     },
     {
       title: 'Ekleyen',
-      dataIndex: ['createdBy', 'fullName'],
       key: 'createdBy',
+      render: (_, record: any) => {
+        return record.createdBy?.fullName || 'Bilinmiyor';
+      }
     },
     {
       title: 'İşlemler',

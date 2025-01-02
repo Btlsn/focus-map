@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { GoogleMap, Marker } from '@react-google-maps/api';
+import { GoogleMap, Marker, StandaloneSearchBox } from '@react-google-maps/api';
 import { Card, Input, Button, Space, Popconfirm, message } from 'antd';
 import { SearchOutlined, AimOutlined, PushpinOutlined } from '@ant-design/icons';
 
 interface LocationPickerProps {
-  onLocationSelect: (location: { lat: number; lng: number; address?: string }) => void;
+  onLocationSelect: (location: { 
+    lat: number; 
+    lng: number; 
+    address?: string;
+    name?: string;
+  }) => void;
   initialLocation?: { lat: number; lng: number };
 }
 
@@ -13,6 +18,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect, initi
   const [selectedMarker, setSelectedMarker] = useState(initialLocation || { lat: 38.50055, lng: 27.69973 });
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [address, setAddress] = useState<string>('');
+  const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
 
   const handleMapClick = (e: google.maps.MapMouseEvent) => {
     if (e.latLng) {
@@ -22,11 +28,23 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect, initi
       };
       setTempMarker(newLocation);
       
-      // Adres bilgisini al
+      // Adres ve mekan adı bilgisini al
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode({ location: newLocation }, (results, status) => {
         if (status === 'OK' && results?.[0]) {
-          setAddress(results[0].formatted_address);
+          const addressResult = results[0];
+          setAddress(addressResult.formatted_address);
+          
+          // Mekan adını bul
+          const establishment = addressResult.address_components.find(
+            component => component.types.includes('establishment')
+          );
+          const placeName = establishment?.long_name || '';
+          
+          setTempMarker({
+            ...newLocation,
+            name: placeName
+          });
         }
       });
     }
@@ -70,30 +88,44 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect, initi
     }
   };
 
+  const onSearchBoxLoad = (ref: google.maps.places.SearchBox) => {
+    setSearchBox(ref);
+  };
+
+  const onPlacesChanged = () => {
+    if (searchBox) {
+      const places = searchBox.getPlaces();
+      if (places && places.length > 0) {
+        const place = places[0];
+        const location = {
+          lat: place.geometry?.location?.lat() || 0,
+          lng: place.geometry?.location?.lng() || 0,
+          name: place.name || '',
+          address: place.formatted_address || ''
+        };
+        setTempMarker(location);
+        map?.panTo({lat: location.lat, lng: location.lng});
+        map?.setZoom(17);
+        
+        setAddress(location.address);
+        onLocationSelect(location);
+      }
+    }
+  };
+
   return (
     <Card>
       <Space direction="vertical" style={{ width: '100%', marginBottom: '16px' }}>
-        <Input.Search
-          placeholder="Konum ara..."
-          onSearch={(value) => {
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ address: value }, (results, status) => {
-              if (status === 'OK' && results?.[0]?.geometry?.location) {
-                const location = {
-                  lat: results[0].geometry.location.lat(),
-                  lng: results[0].geometry.location.lng()
-                };
-                setTempMarker(location);
-                map?.panTo(location);
-                map?.setZoom(17);
-                setAddress(results[0].formatted_address);
-              } else {
-                message.error('Konum bulunamadı');
-              }
-            });
-          }}
-          prefix={<SearchOutlined />}
-        />
+        <StandaloneSearchBox
+          onLoad={onSearchBoxLoad}
+          onPlacesChanged={onPlacesChanged}
+        >
+          <Input
+            placeholder="Konum ara..."
+            prefix={<SearchOutlined />}
+            style={{ width: '100%' }}
+          />
+        </StandaloneSearchBox>
         
         <Button 
           icon={<AimOutlined />}

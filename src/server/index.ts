@@ -105,10 +105,20 @@ connectDB().then(() => {
   // Workspace endpoints
   app.post('/api/workspaces', async (req, res) => {
     try {
-      const { userId } = req.body;
-      const workspace = await workspaceService.createWorkspace(req.body, userId);
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ error: 'Token bulunamadı' });
+      }
+
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const workspace = await workspaceService.createWorkspace({
+        ...req.body,
+        createdBy: decoded.userId
+      });
+      
       res.status(201).json(workspace);
     } catch (error) {
+      console.error('Workspace oluşturma hatası:', error);
       res.status(500).json({ error: 'Mekan eklenirken bir hata oluştu' });
     }
   });
@@ -137,6 +147,15 @@ connectDB().then(() => {
       res.json(workspace);
     } catch (error) {
       res.status(500).json({ error: 'Reddetme işlemi başarısız oldu' });
+    }
+  });
+
+  app.get('/api/workspaces/approved', async (req, res) => {
+    try {
+      const workspaces = await workspaceService.getWorkspaces('approved');
+      res.json(workspaces);
+    } catch (error) {
+      res.status(500).json({ error: 'Mekanlar yüklenirken bir hata oluştu' });
     }
   });
 
