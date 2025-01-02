@@ -24,10 +24,18 @@ const AdminPage: React.FC = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      await axios.post(`http://localhost:5000/api/workspaces/${id}/approve`);
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:5000/api/workspaces/${id}/approve`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
       message.success('Mekan onaylandı');
       fetchPendingWorkspaces();
     } catch (error) {
+      console.error('Onaylama hatası:', error);
       message.error('Onaylama işlemi başarısız oldu');
     }
   };

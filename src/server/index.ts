@@ -134,9 +134,26 @@ connectDB().then(() => {
 
   app.post('/api/workspaces/:id/approve', async (req, res) => {
     try {
-      const workspace = await workspaceService.approveWorkspace(req.params.id, req.body.adminId);
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ error: 'Token bulunamadı' });
+      }
+
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      console.log('Onaylama isteği:', { 
+        workspaceId: req.params.id, 
+        adminId: decoded.userId 
+      });
+
+      const workspace = await workspaceService.approveWorkspace(
+        req.params.id, 
+        decoded.userId
+      );
+      
+      console.log('Onaylanan workspace:', workspace);
       res.json(workspace);
     } catch (error) {
+      console.error('Onaylama hatası:', error);
       res.status(500).json({ error: 'Onaylama işlemi başarısız oldu' });
     }
   });

@@ -37,7 +37,10 @@ export const workspaceService = {
         approvedAt: new Date()
       },
       { new: true }
-    );
+    ).populate({
+      path: 'approvedBy',
+      select: 'fullName email role'
+    });
   },
 
   async rejectWorkspace(workspaceId: string) {
