@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import { connectDB } from './config/db';
 import { userService } from './services/userService';
 import { workspaceService } from './services/workspaceService';
+import { ratingService } from './services/ratingService';
+import { addressService } from './services/addressService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +17,22 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Token doğrulama middleware'i
+const authenticateToken = (req: any, res: any, next: any) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Token bulunamadı' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Geçersiz token' });
+  }
+};
 
 // MongoDB bağlantısı
 connectDB().then(() => {
@@ -103,17 +121,14 @@ connectDB().then(() => {
   });
 
   // Workspace endpoints
-  app.post('/api/workspaces', async (req, res) => {
+  app.post('/api/workspaces', authenticateToken, async (req, res) => {
     try {
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({ error: 'Token bulunamadı' });
-      }
-
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
       const workspace = await workspaceService.createWorkspace({
         ...req.body,
-        createdBy: decoded.userId
+        details: {
+          ...req.body.details,
+          createdBy: req.user.userId
+        }
       });
       
       res.status(201).json(workspace);
@@ -173,6 +188,56 @@ connectDB().then(() => {
       res.json(workspaces);
     } catch (error) {
       res.status(500).json({ error: 'Mekanlar yüklenirken bir hata oluştu' });
+    }
+  });
+
+  // Address endpoints
+  app.post('/api/addresses', authenticateToken, async (req, res) => {
+    try {
+      const address = await addressService.createAddress(req.body);
+      res.status(201).json(address);
+    } catch (error) {
+      console.error('Address oluşturma hatası:', error);
+      res.status(500).json({ error: 'Adres eklenirken bir hata oluştu' });
+    }
+  });
+
+  // Rating endpoints
+  app.post('/api/ratings', async (req, res) => {
+    try {
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ error: 'Token bulunamadı' });
+      }
+
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const rating = await ratingService.createRating({
+        ...req.body,
+        userId: decoded.userId
+      });
+      
+      res.status(201).json(rating);
+    } catch (error) {
+      console.error('Rating oluşturma hatası:', error);
+      res.status(500).json({ error: 'Puanlama eklenirken bir hata oluştu' });
+    }
+  });
+
+  app.get('/api/workspaces/:id/ratings', async (req, res) => {
+    try {
+      const ratings = await ratingService.getWorkspaceRatings(req.params.id);
+      res.json(ratings);
+    } catch (error) {
+      res.status(500).json({ error: 'Puanlamalar yüklenirken bir hata oluştu' });
+    }
+  });
+
+  app.get('/api/workspaces/:id/ratings/average', async (req, res) => {
+    try {
+      const averages = await ratingService.getAverageRatings(req.params.id);
+      res.json(averages);
+    } catch (error) {
+      res.status(500).json({ error: 'Ortalama puanlar hesaplanırken bir hata oluştu' });
     }
   });
 

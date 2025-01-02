@@ -1,45 +1,47 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { userService } from '../services/userService';
+import { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
-interface AuthContextType {
-  isLoggedIn: boolean;
-  user: any;
-  login: (values: { email: string; password: string }) => Promise<void>;
-  logout: () => void;
-  loading: boolean;
-}
+const AuthContext = createContext<any>(undefined);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const userProfile = await userService.getProfile();
-        setUser(userProfile);
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await axios.get('http://localhost:5000/api/users/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUser(response.data);
         setIsLoggedIn(true);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        localStorage.removeItem('token');
+        setIsLoggedIn(false);
       }
-    } catch (error) {
-      localStorage.removeItem('token');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
-  const login = async (values: { email: string; password: string }) => {
-    const response = await userService.login(values);
-    localStorage.setItem('token', response.token);
-    setUser(response.user);
-    setIsLoggedIn(true);
+  const login = async (credentials: { email: string; password: string }) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/login', credentials);
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+      setIsLoggedIn(true);
+      return user;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -49,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, loading, isLoggedIn, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

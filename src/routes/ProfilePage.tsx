@@ -3,7 +3,6 @@ import { Card, Form, Input, Button, message, Tabs, Avatar, Typography, Descripti
 import { UserOutlined } from '@ant-design/icons';
 import AppLayout from '../components/Layout/AppLayout';
 import { useAuth } from '../contexts/AuthContext';
-import { userService } from '../services/userService';
 
 const { Title } = Typography;
 const { TabPane } = Tabs;
@@ -15,10 +14,15 @@ const ProfilePage: React.FC = () => {
 
   const onLogin = async (values: any) => {
     try {
-      await login(values);
+      const loginData = {
+        email: values.email,
+        password: values.password
+      };
+      await login(loginData);
       message.success('Başarıyla giriş yapıldı!');
     } catch (error) {
-      message.error('Giriş yapılırken bir hata oluştu!');
+      console.error('Login hatası:', error);
+      message.error('Giriş yapılırken bir hata oluştu');
     }
   };
 

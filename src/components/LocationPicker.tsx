@@ -9,6 +9,12 @@ interface LocationPickerProps {
     lng: number; 
     address?: string;
     name?: string;
+    addressComponents?: {
+      neighborhood: string;
+      district: string;
+      city: string;
+      country: string;
+    };
   }) => void;
   initialLocation?: { lat: number; lng: number };
 }
@@ -28,23 +34,58 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect, initi
       };
       setTempMarker(newLocation);
       
-      // Adres ve mekan adı bilgisini al
+      // Adres ve mekan bilgilerini al
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode({ location: newLocation }, (results, status) => {
         if (status === 'OK' && results?.[0]) {
           const addressResult = results[0];
+          const addressComponents = addressResult.address_components;
+          
+          // Adres bileşenlerini bul
+          const getAddressComponent = (types: string[]): string => {
+            // Mahalle için özel kontrol
+            if (types.includes('neighborhood')) {
+              const component = addressComponents.find(comp => 
+                comp.types.includes('administrative_area_level_4')
+              );
+              if (component) return component.long_name;
+            }
+
+            // Diğer bileşenler için normal arama
+            const component = addressComponents.find(comp => 
+              types.some(type => comp.types.includes(type))
+            );
+
+            return component?.long_name || '';
+          };
+
+          const neighborhood = getAddressComponent(['neighborhood']);
+          const district = getAddressComponent(['administrative_area_level_2']);
+          const city = getAddressComponent(['administrative_area_level_1']);
+          const country = getAddressComponent(['country']);
+
           setAddress(addressResult.formatted_address);
           
           // Mekan adını bul
-          const establishment = addressResult.address_components.find(
+          const establishment = addressComponents.find(
             component => component.types.includes('establishment')
           );
           const placeName = establishment?.long_name || '';
           
-          setTempMarker({
+          const locationData = {
             ...newLocation,
-            name: placeName
-          });
+            name: placeName,
+            address: addressResult.formatted_address,
+            addressComponents: {
+              neighborhood,
+              district,
+              city,
+              country
+            }
+          };
+
+          setTempMarker(locationData);
+          onLocationSelect(locationData);
         }
       });
     }
