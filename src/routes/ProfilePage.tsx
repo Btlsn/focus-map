@@ -1,42 +1,239 @@
-import React from 'react';
-import { Card, Form, Input, Button, message, Tabs, Avatar, Typography, Descriptions, Spin } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Form, Input, Button, message, Tabs, Avatar, Typography, Descriptions, Spin, DatePicker, Select, Space } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import AppLayout from '../components/Layout/AppLayout';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 const { TabPane } = Tabs;
+const { Option } = Select;
+
+interface UserInfo {
+  _id: string;
+  userId: string;
+  birthDate: Date;
+  gender: 'male' | 'female' | 'other';
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ProfilePage: React.FC = () => {
-  const [form] = Form.useForm();
+  const [userInfoForm] = Form.useForm();
   const [loginForm] = Form.useForm();
-  const { isLoggedIn, user, login, logout, loading } = useAuth();
+  const [registerForm] = Form.useForm();
+  const { user, loading: authLoading, logout, login } = useAuth();
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
+  const navigate = useNavigate();
 
-  const onLogin = async (values: any) => {
+  const fetchUserInfo = async () => {
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const loginData = {
-        email: values.email,
-        password: values.password
-      };
-      await login(loginData);
-      message.success('Başarıyla giriş yapıldı!');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Oturum süreniz dolmuş');
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get(`http://localhost:5000/api/users/${user._id}/info`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data) {
+        setUserInfo(response.data);
+        userInfoForm.setFieldsValue({
+          birthDate: response.data.birthDate ? dayjs(response.data.birthDate) : null,
+          gender: response.data.gender || null
+        });
+      }
     } catch (error) {
-      console.error('Login hatası:', error);
+      console.error('Kullanıcı bilgileri alınamadı:', error);
+      message.error('Kullanıcı bilgileri yüklenirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, [user?._id, userInfoForm]);
+
+  const updateUserInfo = async (values: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Oturum süreniz dolmuş');
+        return;
+      }
+
+      await axios.put(
+        `http://localhost:5000/api/users/${user?._id}/info`,
+        {
+          birthDate: values.birthDate.toDate(),
+          gender: values.gender
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      message.success('Bilgileriniz güncellendi!');
+      await fetchUserInfo();
+    } catch (error) {
+      message.error('Bilgiler güncellenirken bir hata oluştu!');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      message.success('Başarıyla çıkış yapıldı');
+      navigate('/');
+    } catch (error) {
+      message.error('Çıkış yapılırken bir hata oluştu');
+    }
+  };
+
+  const handleLogin = async (values: { email: string; password: string }) => {
+    setLoginLoading(true);
+    try {
+      await login(values);
+      message.success('Başarıyla giriş yapıldı');
+    } catch (error) {
       message.error('Giriş yapılırken bir hata oluştu');
+    } finally {
+      setLoginLoading(false);
     }
   };
 
-  const onRegister = async (values: any) => {
+  const handleRegister = async (values: { fullName: string; email: string; password: string }) => {
+    setRegisterLoading(true);
     try {
-      await userService.createUser(values);
-      message.success('Kullanıcı başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.');
-      form.resetFields();
+      await axios.post('http://localhost:5000/api/users', values);
+      message.success('Kayıt başarılı! Lütfen giriş yapın.');
+      setActiveTab('login');
+      registerForm.resetFields();
     } catch (error) {
-      message.error('Kayıt olurken bir hata oluştu!');
+      message.error('Kayıt olurken bir hata oluştu');
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
-  if (loading) {
+  if (!user && !authLoading) {
+    return (
+      <AppLayout>
+        <Card style={{ maxWidth: 400, margin: '0 auto' }}>
+          <Tabs 
+            activeKey={activeTab} 
+            onChange={setActiveTab}
+            centered
+          >
+            <TabPane tab="Giriş Yap" key="login">
+              <Form
+                form={loginForm}
+                layout="vertical"
+                onFinish={handleLogin}
+              >
+                <Form.Item
+                  name="email"
+                  label="E-posta"
+                  rules={[
+                    { required: true, message: 'Lütfen e-posta adresinizi girin' },
+                    { type: 'email', message: 'Geçerli bir e-posta adresi girin' }
+                  ]}
+                >
+                  <Input size="large" placeholder="ornek@email.com" />
+                </Form.Item>
+
+                <Form.Item
+                  name="password"
+                  label="Şifre"
+                  rules={[{ required: true, message: 'Lütfen şifrenizi girin' }]}
+                >
+                  <Input.Password size="large" placeholder="********" />
+                </Form.Item>
+
+                <Form.Item>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    loading={loginLoading}
+                    block
+                    size="large"
+                  >
+                    Giriş Yap
+                  </Button>
+                </Form.Item>
+              </Form>
+            </TabPane>
+
+            <TabPane tab="Üye Ol" key="register">
+              <Form
+                form={registerForm}
+                layout="vertical"
+                onFinish={handleRegister}
+              >
+                <Form.Item
+                  name="fullName"
+                  label="Ad Soyad"
+                  rules={[{ required: true, message: 'Lütfen adınızı ve soyadınızı girin' }]}
+                >
+                  <Input size="large" placeholder="Ad Soyad" />
+                </Form.Item>
+
+                <Form.Item
+                  name="email"
+                  label="E-posta"
+                  rules={[
+                    { required: true, message: 'Lütfen e-posta adresinizi girin' },
+                    { type: 'email', message: 'Geçerli bir e-posta adresi girin' }
+                  ]}
+                >
+                  <Input size="large" placeholder="ornek@email.com" />
+                </Form.Item>
+
+                <Form.Item
+                  name="password"
+                  label="Şifre"
+                  rules={[
+                    { required: true, message: 'Lütfen şifrenizi girin' },
+                    { min: 6, message: 'Şifre en az 6 karakter olmalıdır' }
+                  ]}
+                >
+                  <Input.Password size="large" placeholder="********" />
+                </Form.Item>
+
+                <Form.Item>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    loading={registerLoading}
+                    block
+                    size="large"
+                  >
+                    Üye Ol
+                  </Button>
+                </Form.Item>
+              </Form>
+            </TabPane>
+          </Tabs>
+        </Card>
+      </AppLayout>
+    );
+  }
+
+  if (authLoading || loading) {
     return (
       <AppLayout>
         <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -46,109 +243,70 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  if (isLoggedIn && user) {
-    return (
-      <AppLayout>
-        <Card style={{ maxWidth: 800, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <Avatar size={64} icon={<UserOutlined />} />
-            <Title level={2} style={{ marginTop: 16 }}>{user.fullName}</Title>
-          </div>
-
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="E-posta">{user.email}</Descriptions.Item>
-            <Descriptions.Item label="Rol">{user.role}</Descriptions.Item>
-            <Descriptions.Item label="Kayıt Tarihi">
-              {new Date(user.createdAt).toLocaleDateString('tr-TR')}
-            </Descriptions.Item>
-          </Descriptions>
-
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <Button type="primary" danger onClick={logout}>
-              Çıkış Yap
-            </Button>
-          </div>
-        </Card>
-      </AppLayout>
-    );
-  }
-
   return (
     <AppLayout>
-      <Card style={{ maxWidth: 600, margin: '0 auto' }}>
+      <Card style={{ maxWidth: 800, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Avatar size={64} icon={<UserOutlined />} />
+          <Title level={2} style={{ marginTop: 16 }}>{user?.fullName}</Title>
+          <Button 
+            type="primary" 
+            danger
+            onClick={handleLogout}
+            style={{ marginTop: 16 }}
+          >
+            Çıkış Yap
+          </Button>
+        </div>
+
         <Tabs defaultActiveKey="1">
-          <TabPane tab="Giriş Yap" key="1">
-            <Form
-              form={loginForm}
-              layout="vertical"
-              onFinish={onLogin}
-            >
-              <Form.Item
-                name="email"
-                label="E-posta"
-                rules={[
-                  { required: true, message: 'Lütfen e-posta adresinizi giriniz' },
-                  { type: 'email', message: 'Geçerli bir e-posta adresi giriniz' }
-                ]}
-              >
-                <Input />
-              </Form.Item>
-
-              <Form.Item
-                name="password"
-                label="Şifre"
-                rules={[{ required: true, message: 'Lütfen şifrenizi giriniz' }]}
-              >
-                <Input.Password />
-              </Form.Item>
-
-              <Form.Item>
-                <Button type="primary" htmlType="submit" block>
-                  Giriş Yap
-                </Button>
-              </Form.Item>
-            </Form>
+          <TabPane tab="Profil Bilgileri" key="1">
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="E-posta">{user?.email}</Descriptions.Item>
+              <Descriptions.Item label="Rol">{user?.role}</Descriptions.Item>
+              <Descriptions.Item label="Doğum Tarihi">
+                {userInfo?.birthDate ? dayjs(userInfo.birthDate).format('DD/MM/YYYY') : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cinsiyet">
+                {userInfo?.gender === 'male' ? 'Erkek' : 
+                 userInfo?.gender === 'female' ? 'Kadın' : 
+                 userInfo?.gender === 'other' ? 'Diğer' : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Kayıt Tarihi">
+                {dayjs(user?.createdAt).format('DD/MM/YYYY')}
+              </Descriptions.Item>
+            </Descriptions>
           </TabPane>
 
-          <TabPane tab="Kayıt Ol" key="2">
+          <TabPane tab="Bilgileri Güncelle" key="2">
             <Form
-              form={form}
+              form={userInfoForm}
               layout="vertical"
-              onFinish={onRegister}
+              onFinish={updateUserInfo}
             >
               <Form.Item
-                name="fullName"
-                label="Ad Soyad"
-                rules={[{ required: true, message: 'Lütfen adınızı giriniz' }]}
+                name="birthDate"
+                label="Doğum Tarihi"
+                rules={[{ required: true, message: 'Lütfen doğum tarihinizi seçin' }]}
               >
-                <Input />
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
 
               <Form.Item
-                name="email"
-                label="E-posta"
-                rules={[
-                  { required: true, message: 'Lütfen e-posta adresinizi giriniz' },
-                  { type: 'email', message: 'Geçerli bir e-posta adresi giriniz' }
-                ]}
+                name="gender"
+                label="Cinsiyet"
+                rules={[{ required: true, message: 'Lütfen cinsiyetinizi seçin' }]}
               >
-                <Input />
-              </Form.Item>
-
-              <Form.Item
-                name="password"
-                label="Şifre"
-                rules={[
-                  { required: true, message: 'Lütfen şifrenizi giriniz' },
-                  { min: 6, message: 'Şifre en az 6 karakter olmalıdır' }
-                ]}
-              >
-                <Input.Password />
+                <Select>
+                  <Option value="male">Erkek</Option>
+                  <Option value="female">Kadın</Option>
+                  <Option value="other">Diğer</Option>
+                </Select>
               </Form.Item>
 
               <Form.Item>
                 <Button type="primary" htmlType="submit" block>
-                  Kayıt Ol
+                  Bilgileri Güncelle
                 </Button>
               </Form.Item>
             </Form>

@@ -7,6 +7,7 @@ import { userService } from './services/userService';
 import { workspaceService } from './services/workspaceService';
 import { ratingService } from './services/ratingService';
 import { addressService } from './services/addressService';
+import UserInfo from './models/UserInfo';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -238,6 +239,47 @@ connectDB().then(() => {
       res.json(averages);
     } catch (error) {
       res.status(500).json({ error: 'Ortalama puanlar hesaplanırken bir hata oluştu' });
+    }
+  });
+
+  // User info endpoints
+  app.get('/api/users/:id/info', authenticateToken, async (req, res) => {
+    try {
+      const userInfo = await UserInfo.findOne({ userId: req.params.id });
+      
+      if (!userInfo) {
+        return res.json({
+          userId: req.params.id,
+          birthDate: null,
+          gender: null
+        });
+      }
+      
+      res.json(userInfo);
+    } catch (error) {
+      console.error('UserInfo getirme hatası:', error);
+      res.status(500).json({ error: 'Kullanıcı bilgileri alınamadı' });
+    }
+  });
+
+  app.put('/api/users/:id/info', authenticateToken, async (req, res) => {
+    try {
+      const { birthDate, gender } = req.body;
+      
+      const userInfo = await UserInfo.findOneAndUpdate(
+        { userId: req.params.id },
+        { 
+          userId: req.params.id,
+          birthDate, 
+          gender 
+        },
+        { new: true, upsert: true }
+      );
+      
+      res.json(userInfo);
+    } catch (error) {
+      console.error('UserInfo güncelleme hatası:', error);
+      res.status(500).json({ error: 'Kullanıcı bilgileri güncellenemedi' });
     }
   });
 
