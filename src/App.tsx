@@ -10,6 +10,7 @@ import MapPage from './routes/MapPage';
 import AddWorkspacePage from './routes/AddWorkspacePage';
 import AdminPage from './routes/AdminPage';
 import PomodoroPage from './routes/PomodoroPage';
+import FavoritesPage from './routes/FavoritesPage';
 
 const App = () => {
   return (
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/add-workspace" element={<AddWorkspacePage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/pomodoro" element={<PomodoroPage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

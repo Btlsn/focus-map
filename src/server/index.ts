@@ -15,6 +15,7 @@ import { Request, Response, NextFunction } from 'express';
 import Log from './models/Log';
 import * as UAParser from 'ua-parser-js';
 import { pomodoroService } from './services/pomodoroService';
+import { favoriteService } from './services/favoriteService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -386,6 +387,53 @@ connectDB().then(() => {
       res.json(pomodoro);
     } catch (error) {
       res.status(500).json({ error: 'Pomodoro durumu güncellenemedi' });
+    }
+  });
+
+  // Favori endpoints
+  app.post('/api/favorites', authenticateToken, async (req: AuthRequest, res: express.Response) => {
+    try {
+      const favorite = await favoriteService.addFavorite(
+        req.user.userId,
+        req.body.workspaceId
+      );
+      res.status(201).json(favorite);
+    } catch (error) {
+      if (error.message === 'Bu mekan zaten favorilerinizde') {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Favori eklenirken bir hata oluştu' });
+      }
+    }
+  });
+
+  app.delete('/api/favorites/:workspaceId', authenticateToken, async (req: AuthRequest, res: express.Response) => {
+    try {
+      await favoriteService.removeFavorite(req.user.userId, req.params.workspaceId);
+      res.json({ message: 'Favori başarıyla kaldırıldı' });
+    } catch (error) {
+      res.status(500).json({ error: 'Favori kaldırılırken bir hata oluştu' });
+    }
+  });
+
+  app.get('/api/favorites', authenticateToken, async (req: AuthRequest, res: express.Response) => {
+    try {
+      const favorites = await favoriteService.getUserFavorites(req.user.userId);
+      res.json(favorites);
+    } catch (error) {
+      res.status(500).json({ error: 'Favoriler alınırken bir hata oluştu' });
+    }
+  });
+
+  app.get('/api/favorites/check/:workspaceId', authenticateToken, async (req: AuthRequest, res: express.Response) => {
+    try {
+      const isFavorite = await favoriteService.isFavorite(
+        req.user.userId,
+        req.params.workspaceId
+      );
+      res.json({ isFavorite });
+    } catch (error) {
+      res.status(500).json({ error: 'Favori kontrolü yapılırken bir hata oluştu' });
     }
   });
 

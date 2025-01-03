@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Row, Col, Select, Space, InputNumber, AutoComplete, List, Rate, Tag } from 'antd';
+import { Card, Typography, Button, Row, Col, Select, Space, InputNumber, AutoComplete, List, Rate, Tag, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { EnvironmentOutlined, WifiOutlined, SoundOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, WifiOutlined, SoundOutlined, ThunderboltOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
 import AppLayout from '../components/Layout/AppLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from 'react-responsive';
@@ -48,7 +48,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 const MainScreen: React.FC = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
   const [location, setLocation] = useState<LocationType | null>(null);
   const [searchText, setSearchText] = useState<string>('');
@@ -66,6 +66,7 @@ const MainScreen: React.FC = () => {
     district: '',
     neighborhood: ''
   });
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   const {
     ready,
@@ -233,6 +234,62 @@ const MainScreen: React.FC = () => {
       return true;
     });
 
+  // Favori durumlarını kontrol et
+  const checkFavorites = async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('token');
+      const promises = workspaces.map(workspace =>
+        axios.get(`http://localhost:5000/api/favorites/check/${workspace._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      );
+      const results = await Promise.all(promises);
+      const favoriteIds = workspaces
+        .filter((_, index) => results[index].data.isFavorite)
+        .map(workspace => workspace._id);
+      setFavorites(favoriteIds);
+    } catch (error) {
+      console.error('Favori kontrolü yapılırken hata:', error);
+    }
+  };
+
+  // Favoriye ekle/çıkar
+  const toggleFavorite = async (workspaceId: string) => {
+    if (!user) {
+      message.warning('Favoriye eklemek için giriş yapmalısınız');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const isFavorite = favorites.includes(workspaceId);
+
+      if (isFavorite) {
+        await axios.delete(`http://localhost:5000/api/favorites/${workspaceId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setFavorites(favorites.filter(id => id !== workspaceId));
+        message.success('Favorilerden çıkarıldı');
+      } else {
+        await axios.post('http://localhost:5000/api/favorites', 
+          { workspaceId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFavorites([...favorites, workspaceId]);
+        message.success('Favorilere eklendi');
+      }
+    } catch (error) {
+      message.error('İşlem sırasında bir hata oluştu');
+    }
+  };
+
+  useEffect(() => {
+    if (workspaces.length > 0) {
+      checkFavorites();
+    }
+  }, [workspaces, user]);
+
   return (
     <AppLayout>
       <Card style={{ 
@@ -308,24 +365,56 @@ const MainScreen: React.FC = () => {
 
       <Card style={{ marginTop: '24px', borderRadius: '12px' }}>
         <List
-          loading={loading}
-          itemLayout="horizontal"
+          grid={{
+            gutter: 16,
+            xs: 1,
+            sm: 2,
+            md: 2,
+            lg: 3,
+            xl: 3,
+            xxl: 4,
+          }}
           dataSource={filteredWorkspaces}
           renderItem={(workspace) => (
             <List.Item>
-              <List.Item.Meta
-                title={
-                  <Space>
-                    {workspace.name}
-                    <Tag color={workspace.type === 'cafe' ? 'blue' : 'green'}>
-                      {workspace.type === 'cafe' ? 'Kafe' : 'Kütüphane'}
-                    </Tag>
-                  </Space>
-                }
-                description={workspace.address.fullAddress}
-              />
-              <Space size="large">
-              <Space>
+              <Card
+                actions={[
+                  <Button
+                    type="text"
+                    icon={favorites.includes(workspace._id) ? <HeartFilled style={{ color: '#ff4d4f' }} /> : <HeartOutlined />}
+                    onClick={() => toggleFavorite(workspace._id)}
+                  >
+                    {favorites.includes(workspace._id) ? 'Favorilerde' : 'Favoriye Ekle'}
+                  </Button>,
+                  <Button
+                    type="link"
+                    onClick={() => navigate('/map', {
+                      state: {
+                        location: {
+                          label: workspace.name,
+                          value: workspace._id,
+                          coordinates: workspace.address.coordinates
+                        }
+                      }
+                    })}
+                  >
+                    Haritada Göster
+                  </Button>
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      {workspace.name}
+                      <Tag color={workspace.type === 'cafe' ? 'blue' : 'green'}>
+                        {workspace.type === 'cafe' ? 'Kafe' : 'Kütüphane'}
+                      </Tag>
+                    </Space>
+                  }
+                  description={workspace.address.fullAddress}
+                />
+                <Space size="large">
+                <Space>
   <WifiOutlined />
   <Rate disabled defaultValue={workspace.ratings.wifi} count={5} />
 </Space>
@@ -337,24 +426,8 @@ const MainScreen: React.FC = () => {
   <ThunderboltOutlined />
   <Rate disabled defaultValue={workspace.ratings.power} count={5} />
 </Space>
-                <Button 
-                  type="primary"
-                  onClick={() => {
-                    navigate('/map', { 
-                      state: { 
-                        location: {
-                          label: workspace.name,
-                          value: workspace._id,
-                          coordinates: workspace.address.coordinates
-                        },
-                        filters
-                      } 
-                    });
-                  }}
-                >
-                  Haritada Göster
-                </Button>
-              </Space>
+                </Space>
+              </Card>
             </List.Item>
           )}
         />
