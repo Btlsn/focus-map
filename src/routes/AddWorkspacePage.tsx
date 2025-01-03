@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Select, InputNumber, message, Typography, Space, Rate } from 'antd';
+import { Card, Form, Input, Button, Select, InputNumber, message, Typography, Space, Rate, Divider, Row, Col, Alert } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/Layout/AppLayout';
 import axios from 'axios';
 import { useMediaQuery } from 'react-responsive';
 import LocationPicker from '../components/LocationPicker';
+import { CoffeeOutlined, BookOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -108,12 +109,22 @@ const AddWorkspacePage: React.FC = () => {
 
   return (
     <AppLayout>
-      <Card style={{ 
-        maxWidth: 800, 
-        margin: '0 auto',
-        padding: isMobile ? '16px' : '24px' 
-      }}>
-        <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>
+      <Card 
+        style={{ 
+          maxWidth: 800, 
+          margin: '0 auto',
+          padding: isMobile ? '16px' : '24px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+        }}
+      >
+        <Title level={2} style={{ 
+          textAlign: 'center', 
+          marginBottom: '32px',
+          background: 'linear-gradient(45deg, #1890ff, #52c41a)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}>
           Yeni Mekan Ekle
         </Title>
 
@@ -123,179 +134,234 @@ const AddWorkspacePage: React.FC = () => {
           onFinish={onFinish}
           initialValues={{
             type: 'cafe',
-            features: {
-              wifi: 5,
-              quiet: 5,
-              power: 5
+            categories: {}
+          }}
+          onValuesChange={(changedValues) => {
+            if (changedValues.type) {
+              const type = changedValues.type;
+              if (type === 'cafe') {
+                form.setFieldsValue({
+                  categories: {
+                    ...form.getFieldValue('categories'),
+                    resources: undefined,
+                    computers: undefined
+                  }
+                });
+              } else {
+                form.setFieldsValue({
+                  categories: {
+                    ...form.getFieldValue('categories'),
+                    taste: undefined
+                  }
+                });
+              }
             }
           }}
         >
-          <Form.Item
-            name="name"
-            label="Mekan Adı"
-            rules={[{ required: true, message: 'Lütfen mekan adını giriniz' }]}
-          >
-            <Input />
-          </Form.Item>
+          <Row gutter={[24, 24]}>
+            <Col span={24} md={12}>
+              <Form.Item
+                name="name"
+                label="Mekan Adı"
+                rules={[{ required: true, message: 'Lütfen mekan adını giriniz' }]}
+              >
+                <Input size="large" placeholder="Örn: Starbucks Alsancak" />
+              </Form.Item>
+            </Col>
 
-          <Form.Item
-            name="type"
-            label="Mekan Türü"
-            rules={[{ required: true, message: 'Lütfen mekan türünü seçiniz' }]}
-          >
-            <Select>
-              <Option value="cafe">Kafe</Option>
-              <Option value="library">Kütüphane</Option>
-            </Select>
-          </Form.Item>
+            <Col span={24} md={12}>
+              <Form.Item
+                name="type"
+                label="Mekan Türü"
+                rules={[{ required: true, message: 'Lütfen mekan türünü seçiniz' }]}
+              >
+                <Select size="large">
+                  <Option value="cafe">
+                    <Space>
+                      <CoffeeOutlined />
+                      Kafe
+                    </Space>
+                  </Option>
+                  <Option value="library">
+                    <Space>
+                      <BookOutlined />
+                      Kütüphane
+                    </Space>
+                  </Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item label="Adres Bilgileri">
-            <Form.Item
-              name={['address', 'country']}
-              label="Ülke"
-              rules={[{ required: true, message: 'Lütfen ülke giriniz' }]}
-            >
-              <Input />
-            </Form.Item>
+          <Divider orientation="left">Konum Bilgisi</Divider>
+          
+          <Form.Item>
+            
+            <LocationPicker
+              onLocationSelect={(location) => {
+                // Google Geocoding API'den gelen adres bileşenlerini parse et
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results, status) => {
+                  if (status === 'OK' && results?.[0]) {
+                    const addressComponents = results[0].address_components;
+                    
+                    // Adres bileşenlerini bul
+                    const getComponent = (type: string) => {
+                      const component = addressComponents.find(comp => 
+                        comp.types.includes(type)
+                      );
+                      return component?.long_name || '';
+                    };
 
-            <Form.Item
-              name={['address', 'city']}
-              label="İl"
-              rules={[{ required: true, message: 'Lütfen il giriniz' }]}
-            >
-              <Input />
-            </Form.Item>
-
-            <Form.Item
-              name={['address', 'district']}
-              label="İlçe"
-              rules={[{ required: true, message: 'Lütfen ilçe giriniz' }]}
-            >
-              <Input />
-            </Form.Item>
-
-            <Form.Item
-              name={['address', 'neighborhood']}
-              label="Mahalle"
-              rules={[{ required: true, message: 'Lütfen mahalle giriniz' }]}
-            >
-              <Input />
-            </Form.Item>
-
-            <Form.Item
-              name={['address', 'fullAddress']}
-              label="Tam Adres"
-              rules={[{ required: true, message: 'Lütfen tam adresi giriniz' }]}
-            >
-              <Input.TextArea rows={3} />
-            </Form.Item>
-
-            <Form.Item label="Konum">
-              <LocationPicker
-                onLocationSelect={(location) => {
-                  // Google Geocoding API'den gelen adres bileşenlerini parse et
-                  const geocoder = new google.maps.Geocoder();
-                  geocoder.geocode({ location: { lat: location.lat, lng: location.lng } }, (results, status) => {
-                    if (status === 'OK' && results?.[0]) {
-                      const addressComponents = results[0].address_components;
-                      
-                      // Adres bileşenlerini bul
-                      const getComponent = (type: string) => {
-                        const component = addressComponents.find(comp => 
-                          comp.types.includes(type)
-                        );
-                        return component?.long_name || '';
-                      };
-
-                      // Form alanlarını otomatik doldur
-                      form.setFieldsValue({
-                        address: {
-                          country: getComponent('country'),
-                          city: getComponent('administrative_area_level_1'),
-                          district: getComponent('administrative_area_level_2'),
-                          neighborhood: getComponent('administrative_area_level_4') || getComponent('sublocality') || getComponent('neighborhood'),
-                          fullAddress: results[0].formatted_address,
-                          coordinates: {
-                            lat: location.lat,
-                            lng: location.lng
-                          }
+                    // Form alanlarını otomatik doldur
+                    form.setFieldsValue({
+                      address: {
+                        country: getComponent('country'),
+                        city: getComponent('administrative_area_level_1'),
+                        district: getComponent('administrative_area_level_2'),
+                        neighborhood: getComponent('administrative_area_level_4') || getComponent('sublocality') || getComponent('neighborhood'),
+                        fullAddress: results[0].formatted_address,
+                        coordinates: {
+                          lat: location.lat,
+                          lng: location.lng
                         }
+                      }
+                    });
+
+                    // Eğer mekan adı geldiyse, form'un name alanını güncelle
+                    if (location.placeName) {
+                      form.setFieldsValue({
+                        name: location.placeName
                       });
                     }
-                  });
-                }}
-                initialLocation={form.getFieldValue(['address', 'coordinates'])}
-              />
-              <Space.Compact block>
-                <Form.Item
-                  name={['address', 'coordinates', 'lat']}
-                  rules={[{ required: true, message: 'Enlem gerekli' }]}
-                  noStyle
-                >
-                  <InputNumber
-                    placeholder="Enlem"
-                    style={{ width: '50%' }}
-                    step="0.000001"
-                    disabled
-                  />
-                </Form.Item>
-                <Form.Item
-                  name={['address', 'coordinates', 'lng']}
-                  rules={[{ required: true, message: 'Boylam gerekli' }]}
-                  noStyle
-                >
-                  <InputNumber
-                    placeholder="Boylam"
-                    style={{ width: '50%' }}
-                    step="0.000001"
-                    disabled
-                  />
-                </Form.Item>
-              </Space.Compact>
-            </Form.Item>
+                  }
+                });
+              }}
+              initialLocation={form.getFieldValue(['address', 'coordinates'])}
+            />
           </Form.Item>
 
-          <Title level={4}>Özellikler</Title>
-          <Form.Item label="Özellikler">
-            <Form.Item label="WiFi" name={['categories', 'wifi']}>
-              <Rate count={5} />
-            </Form.Item>
-
-            <Form.Item label="Sessizlik" name={['categories', 'quiet']}>
-              <Rate count={5} />
-            </Form.Item>
-
-            <Form.Item label="Priz İmkanı" name={['categories', 'power']}>
-              <Rate count={5} />
-            </Form.Item>
-
-            <Form.Item label="Temizlik" name={['categories', 'cleanliness']}>
-              <Rate count={5} />
-            </Form.Item>
-
-            {form.getFieldValue('type') === 'cafe' ? (
-              <Form.Item label="Lezzet" name={['categories', 'taste']}>
-                <Rate count={5} />
+          <Form.Item noStyle>
+            <Input.Group>
+              {/* Gizli form alanları */}
+              <Form.Item name={['address', 'country']} hidden>
+                <Input />
               </Form.Item>
-            ) : (
-              <>
-                <Form.Item label="Kaynak Yeterliliği" name={['categories', 'resources']}>
-                  <Rate count={5} />
-                </Form.Item>
-                <Form.Item label="Bilgisayar İmkanları" name={['categories', 'computers']}>
-                  <Rate count={5} />
-                </Form.Item>
-              </>
-            )}
+              <Form.Item name={['address', 'city']} hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name={['address', 'district']} hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name={['address', 'neighborhood']} hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name={['address', 'fullAddress']} hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name={['address', 'coordinates', 'lat']} hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name={['address', 'coordinates', 'lng']} hidden>
+                <Input />
+              </Form.Item>
+            </Input.Group>
           </Form.Item>
 
-          <Form.Item>
+          <Divider orientation="left">Özellikler</Divider>
+
+          <Row gutter={[24, 24]}>
+            <Col span={24} md={12}>
+              <Card size="small" bordered={false} style={{ background: '#f5f5f5' }}>
+                <Title level={5}>Temel Özellikler</Title>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Form.Item 
+                    label="WiFi" 
+                    name={['categories', 'wifi']}
+                    rules={[{ required: true, message: 'Lütfen WiFi değerlendirmesi yapın' }]}
+                  >
+                    <Rate />
+                  </Form.Item>
+                  <Form.Item 
+                    label="Sessizlik" 
+                    name={['categories', 'quiet']}
+                    rules={[{ required: true, message: 'Lütfen sessizlik değerlendirmesi yapın' }]}
+                  >
+                    <Rate />
+                  </Form.Item>
+                  <Form.Item 
+                    label="Priz İmkanı" 
+                    name={['categories', 'power']}
+                    rules={[{ required: true, message: 'Lütfen priz imkanı değerlendirmesi yapın' }]}
+                  >
+                    <Rate />
+                  </Form.Item>
+                  <Form.Item 
+                    label="Temizlik" 
+                    name={['categories', 'cleanliness']}
+                    rules={[{ required: true, message: 'Lütfen temizlik değerlendirmesi yapın' }]}
+                  >
+                    <Rate />
+                  </Form.Item>
+                </Space>
+              </Card>
+            </Col>
+
+            <Col span={24} md={12}>
+              <Form.Item dependencies={['type']} noStyle>
+                {({ getFieldValue }) => {
+                  const type = getFieldValue('type');
+                  
+                  return (
+                    <Card size="small" bordered={false} style={{ background: '#f5f5f5' }}>
+                      <Title level={5}>
+                        {type === 'cafe' ? 'Kafe Özellikleri' : 'Kütüphane Özellikleri'}
+                      </Title>
+                      {type === 'cafe' ? (
+                        <Form.Item 
+                          label="Lezzet" 
+                          name={['categories', 'taste']}
+                          rules={[{ required: true, message: 'Lütfen lezzet değerlendirmesi yapın' }]}
+                        >
+                          <Rate />
+                        </Form.Item>
+                      ) : (
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                          <Form.Item 
+                            label="Kaynak Yeterliliği" 
+                            name={['categories', 'resources']}
+                            rules={[{ required: true, message: 'Lütfen kaynak yeterliliği değerlendirmesi yapın' }]}
+                          >
+                            <Rate />
+                          </Form.Item>
+                          <Form.Item 
+                            label="Bilgisayar İmkanları" 
+                            name={['categories', 'computers']}
+                            rules={[{ required: true, message: 'Lütfen bilgisayar imkanları değerlendirmesi yapın' }]}
+                          >
+                            <Rate />
+                          </Form.Item>
+                        </Space>
+                      )}
+                    </Card>
+                  );
+                }}
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item style={{ marginTop: '24px' }}>
             <Button 
               type="primary" 
               htmlType="submit" 
               loading={loading}
               block
-              size={isMobile ? 'large' : 'middle'}
+              size="large"
+              style={{
+                height: '48px',
+                borderRadius: '8px',
+                background: 'linear-gradient(45deg, #1890ff, #52c41a)'
+              }}
             >
               {user?.role === 'admin' ? 'Mekanı Ekle' : 'Onaya Gönder'}
             </Button>
