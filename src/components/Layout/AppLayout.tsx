@@ -7,9 +7,12 @@ import {
   EnvironmentOutlined, 
   StarOutlined,
   MenuOutlined ,
-  PlusOutlined 
+  PlusOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import { useMediaQuery } from 'react-responsive';
+import { useAuth } from '../../contexts/AuthContext';
+
 
 const { Header, Content, Footer } = Layout;
 
@@ -21,13 +24,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 768 });
+  const { user } = useAuth();
 
   const menuItems = [
     { key: '/', icon: <HomeOutlined />, label: 'Kafeler' },
     { key: '/map', icon: <EnvironmentOutlined />, label: 'Harita' },
     { key: '/profile', icon: <UserOutlined />, label: 'Profil' },
     { key: '/favorites', icon: <StarOutlined />, label: 'Favoriler' },
-    { key: '/add-workspace', icon: <PlusOutlined />, label: 'Mekan Ekle' }
+    { key: '/add-workspace', icon: <PlusOutlined />, label: 'Mekan Ekle' },
+    ...(user?.role === 'admin' ? [
+      { key: '/admin', icon: <SettingOutlined />, label: 'Admin Panel' }
+    ] : [])
   ];
 
   const renderMenu = () => (
