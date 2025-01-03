@@ -10,6 +10,7 @@ import { addressService } from './services/addressService';
 import UserInfo from './models/UserInfo';
 import mongoose from 'mongoose';
 import { IUser } from './models/User';
+import Rating from './models/Rating';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -278,6 +279,24 @@ connectDB().then(() => {
     } catch (error) {
       console.error('UserInfo güncelleme hatası:', error);
       res.status(500).json({ error: 'Kullanıcı bilgileri güncellenemedi' });
+    }
+  });
+
+  // Kullanıcının bir workspace için verdiği puanı getir
+  app.get('/api/workspaces/:id/user-rating', authenticateToken, async (req, res) => {
+    try {
+      const rating = await Rating.findOne({
+        workspaceId: req.params.id,
+        userId: req.user.id
+      });
+      
+      if (!rating) {
+        return res.json(null);
+      }
+      
+      res.json(rating.categories);
+    } catch (error) {
+      res.status(500).json({ error: 'Kullanıcı puanı alınırken bir hata oluştu' });
     }
   });
 

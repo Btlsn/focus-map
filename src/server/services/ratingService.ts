@@ -75,5 +75,17 @@ export const ratingService = {
       ...specificAverages,
       totalRatings: ratings.length
     };
+  },
+
+  async updateRating(workspaceId: string, userId: string, categories: any) {
+    return await Rating.findOneAndUpdate(
+      { workspaceId, userId },
+      { categories },
+      { new: true }
+    );
+  },
+
+  async getUserRating(workspaceId: string, userId: string) {
+    return await Rating.findOne({ workspaceId, userId });
   }
 }; 
