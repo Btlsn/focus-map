@@ -13,6 +13,7 @@ import { IUser } from './models/User';
 import Rating from './models/Rating';
 import { Request, Response, NextFunction } from 'express';
 import Log from './models/Log';
+import * as UAParser from 'ua-parser-js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -91,10 +92,24 @@ connectDB().then(() => {
       );
 
       // Log kaydı oluştur
+      const parser = new UAParser.UAParser(req.headers['user-agent']);
+      const browserInfo = parser.getResult();
+
+      // IPv4 adresini al
+      let ipAddress = req.ip || req.connection.remoteAddress;
+      // IPv6 formatındaysa IPv4'e dönüştür
+      if (ipAddress?.includes('::ffff:')) {
+        ipAddress = ipAddress.split(':').pop();
+      }
+
       const log = new Log({
         userId: user._id,
-        ipAddress: req.ip || req.connection.remoteAddress,
-        userAgent: req.headers['user-agent']
+        ipAddress: ipAddress || 'unknown',
+        browser: {
+          name: browserInfo.browser.name || 'unknown',
+          version: browserInfo.browser.version || 'unknown',
+          os: browserInfo.os.name + ' ' + browserInfo.os.version || 'unknown'
+        }
       });
       await log.save();
 

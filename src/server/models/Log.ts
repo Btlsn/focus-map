@@ -4,7 +4,11 @@ export interface ILog extends Document {
   userId: mongoose.Types.ObjectId;
   loginDate: Date;
   ipAddress: string;
-  userAgent: string;
+  browser: {
+    name: string;
+    version: string;
+    os: string;
+  };
 }
 
 const logSchema = new Schema<ILog>({
@@ -21,9 +25,19 @@ const logSchema = new Schema<ILog>({
     type: String,
     required: true
   },
-  userAgent: {
-    type: String,
-    required: true
+  browser: {
+    name: {
+      type: String,
+      required: true
+    },
+    version: {
+      type: String,
+      required: true
+    },
+    os: {
+      type: String,
+      required: true
+    }
   }
 });
 
