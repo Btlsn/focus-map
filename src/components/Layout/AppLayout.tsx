@@ -87,19 +87,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       </Header>
 
       <Content style={{ 
-        padding: isMobile ? '16px' : '24px', 
-        backgroundColor: '#f5f5f5' 
+        backgroundColor: '#f5f5f5',
+        overflow: 'hidden'
       }}>
         {children}
       </Content>
 
-      <Footer style={{ 
-        textAlign: 'center', 
-        backgroundColor: '#fff',
-        padding: isMobile ? '12px' : '24px'
-      }}>
-        Focus Map ©2024 - Tüm Hakları Saklıdır
-      </Footer>
+      
     </Layout>
   );
 };
