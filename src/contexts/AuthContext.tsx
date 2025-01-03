@@ -3,6 +3,14 @@ import axios from "axios";
 
 const AuthContext = createContext<any>(undefined);
 
+interface User {
+  _id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,10 +42,25 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', credentials);
       const { token, user } = response.data;
+      
+      console.log('Login response in AuthContext:', { token, user });
+
+      if (!user || !user._id) {
+        throw new Error('Invalid user data received');
+      }
+
       localStorage.setItem('token', token);
-      setUser(user);
+      const userData = {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt
+      };
+      
+      setUser(userData);
       setIsLoggedIn(true);
-      return user;
+      return userData;
     } catch (error) {
       console.error('Login error:', error);
       throw error;

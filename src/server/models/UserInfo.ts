@@ -1,31 +1,30 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserInfo extends Document {
-  userId: mongoose.Types.ObjectId;
-  birthDate: Date;
-  gender: 'male' | 'female' | 'other';
+  userId: string;
+  birthDate: Date | null;
+  gender: 'male' | 'female' | 'other' | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const UserInfoSchema: Schema = new Schema({
+const userInfoSchema = new Schema<IUserInfo>({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     unique: true
   },
   birthDate: {
     type: Date,
-    required: true
+    default: null
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
-    required: true
+    enum: ['male', 'female', 'other', null],
+    default: null
   }
 }, {
   timestamps: true
 });
 
-export default mongoose.model<IUserInfo>('UserInfo', UserInfoSchema);
+export default mongoose.model<IUserInfo>('UserInfo', userInfoSchema);

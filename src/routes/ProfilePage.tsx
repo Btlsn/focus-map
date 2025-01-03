@@ -34,6 +34,7 @@ const ProfilePage: React.FC = () => {
 
   const fetchUserInfo = async () => {
     if (!user?._id) {
+      console.log('User ID yok:', user);
       setLoading(false);
       return;
     }
@@ -46,10 +47,12 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
+      console.log('Fetching user info for ID:', user._id);
       const response = await axios.get(`http://localhost:5000/api/users/${user._id}/info`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log('User info response:', response.data);
       if (response.data) {
         setUserInfo(response.data);
         userInfoForm.setFieldsValue({
@@ -57,8 +60,8 @@ const ProfilePage: React.FC = () => {
           gender: response.data.gender || null
         });
       }
-    } catch (error) {
-      console.error('Kullanıcı bilgileri alınamadı:', error);
+    } catch (error: any) {
+      console.error('Kullanıcı bilgileri alınamadı:', error.response?.data || error);
       message.error('Kullanıcı bilgileri yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -77,8 +80,15 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
+      if (!user?._id) {
+        console.error('User ID bulunamadı:', user);
+        message.error('Kullanıcı bilgisi bulunamadı');
+        return;
+      }
+
+      console.log('Updating user info:', { userId: user._id, values });
       await axios.put(
-        `http://localhost:5000/api/users/${user?._id}/info`,
+        `http://localhost:5000/api/users/${user._id}/info`,
         {
           birthDate: values.birthDate.toDate(),
           gender: values.gender
@@ -89,7 +99,8 @@ const ProfilePage: React.FC = () => {
       );
       message.success('Bilgileriniz güncellendi!');
       await fetchUserInfo();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Güncelleme hatası:', error.response?.data || error);
       message.error('Bilgiler güncellenirken bir hata oluştu!');
     }
   };
@@ -107,9 +118,15 @@ const ProfilePage: React.FC = () => {
   const handleLogin = async (values: { email: string; password: string }) => {
     setLoginLoading(true);
     try {
-      await login(values);
+      const response = await login(values);
+      console.log('Login response in ProfilePage:', response);
+      if (!response?._id) {
+        throw new Error('Invalid user data received');
+      }
       message.success('Başarıyla giriş yapıldı');
+      await fetchUserInfo();
     } catch (error) {
+      console.error('Login error:', error);
       message.error('Giriş yapılırken bir hata oluştu');
     } finally {
       setLoginLoading(false);

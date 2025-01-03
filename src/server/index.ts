@@ -8,6 +8,8 @@ import { workspaceService } from './services/workspaceService';
 import { ratingService } from './services/ratingService';
 import { addressService } from './services/addressService';
 import UserInfo from './models/UserInfo';
+import mongoose from 'mongoose';
+import { IUser } from './models/User';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -58,39 +60,36 @@ connectDB().then(() => {
   // Login endpoint'i
   app.post('/api/auth/login', async (req, res) => {
     try {
-      console.log('Login isteği:', req.body); // Debug için
       const { email, password } = req.body;
       const user = await userService.findUserByEmail(email);
 
       if (!user) {
-        console.log('Kullanıcı bulunamadı:', email); // Debug için
         return res.status(401).json({ error: 'Kullanıcı bulunamadı' });
       }
 
       const isValidPassword = await bcrypt.compare(password, user.password);
-      console.log('Şifre kontrolü:', isValidPassword); // Debug için
-
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Geçersiz şifre' });
       }
 
       const token = jwt.sign(
-        { userId: user._id, email: user.email },
+        { userId: user._id.toString(), email: user.email },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      res.json({
-        token,
-        user: {
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt
-        }
-      });
+      const userData = {
+        _id: user._id.toString(),
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt
+      };
+
+      console.log('Login response:', userData);
+      res.json({ token, user: userData });
     } catch (error) {
-      console.error('Login hatası:', error); // Debug için
+      console.error('Login error:', error);
       res.status(500).json({ error: 'Giriş yapılırken bir hata oluştu' });
     }
   });
@@ -242,19 +241,18 @@ connectDB().then(() => {
     }
   });
 
-  // User info endpoints
+  // UserInfo endpoint'leri
   app.get('/api/users/:id/info', authenticateToken, async (req, res) => {
     try {
       const userInfo = await UserInfo.findOne({ userId: req.params.id });
-      
       if (!userInfo) {
+        // Kullanıcı bilgisi yoksa boş bir obje döndür
         return res.json({
           userId: req.params.id,
           birthDate: null,
           gender: null
         });
       }
-      
       res.json(userInfo);
     } catch (error) {
       console.error('UserInfo getirme hatası:', error);
@@ -273,7 +271,7 @@ connectDB().then(() => {
           birthDate, 
           gender 
         },
-        { new: true, upsert: true }
+        { new: true, upsert: true } // upsert: true ile yoksa yeni kayıt oluşturur
       );
       
       res.json(userInfo);
