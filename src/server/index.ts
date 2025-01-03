@@ -14,6 +14,7 @@ import Rating from './models/Rating';
 import { Request, Response, NextFunction } from 'express';
 import Log from './models/Log';
 import * as UAParser from 'ua-parser-js';
+import { pomodoroService } from './services/pomodoroService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -351,6 +352,40 @@ connectDB().then(() => {
     } catch (error) {
       console.error('Rating güncelleme hatası:', error);
       res.status(500).json({ error: 'Puanlama güncellenirken bir hata oluştu' });
+    }
+  });
+
+  // Pomodoro routes
+  app.post('/api/pomodoros', authenticateToken, async (req, res) => {
+    try {
+      const pomodoro = await pomodoroService.createPomodoro({
+        ...req.body,
+        userId: req.user.userId
+      });
+      res.status(201).json(pomodoro);
+    } catch (error) {
+      res.status(500).json({ error: 'Pomodoro oluşturulamadı' });
+    }
+  });
+
+  app.get('/api/pomodoros', authenticateToken, async (req, res) => {
+    try {
+      const pomodoros = await pomodoroService.getUserPomodoros(req.user.userId);
+      res.json(pomodoros);
+    } catch (error) {
+      res.status(500).json({ error: 'Pomodorolar alınamadı' });
+    }
+  });
+
+  app.patch('/api/pomodoros/:id/status', authenticateToken, async (req, res) => {
+    try {
+      const pomodoro = await pomodoroService.updatePomodoroStatus(
+        req.params.id,
+        req.body.status
+      );
+      res.json(pomodoro);
+    } catch (error) {
+      res.status(500).json({ error: 'Pomodoro durumu güncellenemedi' });
     }
   });
 

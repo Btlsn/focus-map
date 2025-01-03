@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LoadScript } from '@react-google-maps/api';
@@ -8,6 +9,7 @@ import NotificationsPage from './routes/NotificationsPage';
 import MapPage from './routes/MapPage';
 import AddWorkspacePage from './routes/AddWorkspacePage';
 import AdminPage from './routes/AdminPage';
+import PomodoroPage from './routes/PomodoroPage';
 
 const App = () => {
   return (
@@ -26,6 +28,7 @@ const App = () => {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/add-workspace" element={<AddWorkspacePage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/pomodoro" element={<PomodoroPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

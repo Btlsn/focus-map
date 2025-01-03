@@ -8,13 +8,14 @@ import {
   StarOutlined,
   MenuOutlined ,
   PlusOutlined,
-  SettingOutlined
+  SettingOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { useMediaQuery } from 'react-responsive';
 import { useAuth } from '../../contexts/AuthContext';
 
 
-const { Header, Content, Footer } = Layout;
+const { Header, Content } = Layout;
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -32,6 +33,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { key: '/profile', icon: <UserOutlined />, label: 'Profil' },
     { key: '/favorites', icon: <StarOutlined />, label: 'Favoriler' },
     { key: '/add-workspace', icon: <PlusOutlined />, label: 'Mekan Ekle' },
+    { key: '/pomodoro', icon: <ClockCircleOutlined />, label: 'Pomodoro' },
     ...(user?.role === 'admin' ? [
       { key: '/admin', icon: <SettingOutlined />, label: 'Admin Panel' }
     ] : [])
