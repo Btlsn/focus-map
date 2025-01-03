@@ -34,12 +34,12 @@ export const workspaceService = {
             wifi: 0,
             quiet: 0,
             power: 0,
-            cleanliness: 0,
-            ...(workspace.type === 'cafe' ? { taste: 0 } : { resources: 0, computers: 0 })
+            cleanliness: 0
           };
 
           if (ratings.length > 0) {
             ratings.forEach(rating => {
+              // Her bir rating kategorisini topla
               Object.keys(averageRatings).forEach(key => {
                 averageRatings[key] += rating.categories[key] / ratings.length;
               });
