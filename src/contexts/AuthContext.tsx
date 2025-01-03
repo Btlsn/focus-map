@@ -4,7 +4,8 @@ import axios from "axios";
 const AuthContext = createContext<any>(undefined);
 
 interface User {
-  _id: string;
+  id?: string;
+  _id?: string;
   fullName: string;
   email: string;
   role: string;

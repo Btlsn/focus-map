@@ -33,7 +33,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
 
   const fetchUserInfo = async () => {
-    if (!user?._id) {
+    if (!user?.id && !user?._id) {
       console.log('User ID yok:', user);
       setLoading(false);
       return;
@@ -47,8 +47,9 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
-      console.log('Fetching user info for ID:', user._id);
-      const response = await axios.get(`http://localhost:5000/api/users/${user._id}/info`, {
+      const userId = user.id || user._id;
+      console.log('Fetching user info for ID:', userId);
+      const response = await axios.get(`http://localhost:5000/api/users/${userId}/info`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -80,15 +81,16 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
-      if (!user?._id) {
+      const userId = user?.id || user?._id;
+      if (!userId) {
         console.error('User ID bulunamadı:', user);
         message.error('Kullanıcı bilgisi bulunamadı');
         return;
       }
 
-      console.log('Updating user info:', { userId: user._id, values });
+      console.log('Updating user info:', { userId, values });
       await axios.put(
-        `http://localhost:5000/api/users/${user._id}/info`,
+        `http://localhost:5000/api/users/${userId}/info`,
         {
           birthDate: values.birthDate.toDate(),
           gender: values.gender

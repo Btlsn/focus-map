@@ -11,10 +11,14 @@ import UserInfo from './models/UserInfo';
 import mongoose from 'mongoose';
 import { IUser } from './models/User';
 import Rating from './models/Rating';
+import { Request, Response, NextFunction } from 'express';
+import Log from './models/Log';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+app.set('trust proxy', true);
 
 app.use(cors({
   origin: 'http://localhost:5173',
@@ -22,15 +26,22 @@ app.use(cors({
 }));
 app.use(express.json());
 
+interface AuthRequest extends express.Request {
+  user?: {
+    userId: string;
+    email: string;
+  };
+}
+
 // Token doğrulama middleware'i
-const authenticateToken = (req: any, res: any, next: any) => {
+const authenticateToken = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
     return res.status(401).json({ error: 'Token bulunamadı' });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
     req.user = decoded;
     next();
   } catch (error) {
@@ -79,7 +90,16 @@ connectDB().then(() => {
         { expiresIn: '24h' }
       );
 
+      // Log kaydı oluştur
+      const log = new Log({
+        userId: user._id,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent']
+      });
+      await log.save();
+
       const userData = {
+        id: user._id.toString(),
         _id: user._id.toString(),
         fullName: user.fullName,
         email: user.email,
@@ -283,11 +303,11 @@ connectDB().then(() => {
   });
 
   // Kullanıcının bir workspace için verdiği puanı getir
-  app.get('/api/workspaces/:id/user-rating', authenticateToken, async (req, res) => {
+  app.get('/api/workspaces/:id/user-rating', authenticateToken, async (req: AuthRequest, res: express.Response) => {
     try {
       const rating = await Rating.findOne({
         workspaceId: req.params.id,
-        userId: req.user.id
+        userId: req.user?.userId
       });
       
       if (!rating) {
@@ -297,6 +317,25 @@ connectDB().then(() => {
       res.json(rating.categories);
     } catch (error) {
       res.status(500).json({ error: 'Kullanıcı puanı alınırken bir hata oluştu' });
+    }
+  });
+
+  app.post('/api/workspaces/:id/ratings/update', authenticateToken, async (req, res) => {
+    try {
+      const rating = await ratingService.updateRating(
+        req.params.id,
+        req.user.userId,
+        req.body.categories
+      );
+      
+      if (!rating) {
+        return res.status(404).json({ error: 'Puan bulunamadı' });
+      }
+      
+      res.json(rating);
+    } catch (error) {
+      console.error('Rating güncelleme hatası:', error);
+      res.status(500).json({ error: 'Puanlama güncellenirken bir hata oluştu' });
     }
   });
 
