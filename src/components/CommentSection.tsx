@@ -38,17 +38,44 @@ const CommentSection: React.FC<CommentSectionProps> = ({ workspaceId, comments, 
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      if (!token) {
+        message.error('Oturum süreniz dolmuş, lütfen tekrar giriş yapın');
+        return;
+      }
+
+      console.log('Sending comment request:', {
+        workspaceId,
+        text: newComment,
+        hasToken: true
+      });
+
+      const response = await axios.post(
         `http://localhost:5000/api/workspaces/${workspaceId}/comments`,
         { text: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
       );
 
+      console.log('Comment response:', response.data);
       setNewComment('');
       await fetchComments(workspaceId);
       message.success('Yorumunuz eklendi');
     } catch (error) {
-      message.error('Yorum eklenirken bir hata oluştu');
+      console.error('Comment submission error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      const errorMessage = error.response?.data?.details || 
+                          error.response?.data?.error || 
+                          'Yorum eklenirken bir hata oluştu';
+      
+      message.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
