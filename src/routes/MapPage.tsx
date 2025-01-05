@@ -447,11 +447,13 @@ const MapPage: React.FC = () => {
             </div>
           )}
 
-<CommentSection 
-  workspaceId={selectedWorkspace._id} 
-  comments={comments} 
-  fetchComments={() => fetchComments(selectedWorkspace._id)} 
-/>
+          {selectedWorkspace?.type === 'cafe' && (
+            <CommentSection 
+              workspaceId={selectedWorkspace._id} 
+              comments={comments} 
+              fetchComments={() => fetchComments(selectedWorkspace._id)} 
+            />
+          )}
         </Space>
       </Modal>
     </AppLayout>
