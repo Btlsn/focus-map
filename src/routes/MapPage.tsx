@@ -160,10 +160,16 @@ const MapPage: React.FC = () => {
   const fetchComments = async (workspaceId: string) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/workspaces/${workspaceId}/comments`);
-      setComments(response.data);
+      return response.data;
     } catch (error) {
-      console.error('Yorumlar yüklenirken hata:', error);
-      message.error('Yorumlar yüklenirken bir hata oluştu');
+      if (axios.isAxiosError(error)) {
+        console.error('Yorumlar yüklenirken hata:', error.message);
+        console.error('Error code:', error.code);
+        console.error('Error response:', error.response);
+      } else {
+        console.error('Unexpected error:', error);
+      }
+      return [];
     }
   };
 

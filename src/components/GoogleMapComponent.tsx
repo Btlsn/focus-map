@@ -135,7 +135,13 @@ const GoogleMapComponent: React.FC = () => {
         }));
         setAllWorkspaces(workspacesWithAddresses);
       } catch (error) {
-        console.error('Mekanlar yüklenirken hata:', error);
+        if (axios.isAxiosError(error)) {
+          console.error('Mekanlar yüklenirken hata:', error.message);
+          console.error('Error code:', error.code);
+          console.error('Error response:', error.response);
+        } else {
+          console.error('Unexpected error:', error);
+        }
       }
     };
 

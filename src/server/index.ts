@@ -18,6 +18,7 @@ import { pomodoroService } from './services/pomodoroService';
 import { favoriteService } from './services/favoriteService';
 import { startGrpcServer } from '../protocols/grpc/grpcServer';
 import { startSoapServer } from '../protocols/soap/soapServer';
+import commentRoutes from './routes/commentRoutes';
 
 
 
@@ -457,4 +458,6 @@ connectDB().then(() => {
   process.exit(1);
 });
 
-// ... mevcut Express route'ları ve middleware'ler ... 
+app.use('/api', commentRoutes);
+
+// ... mevcut Express route'ları ve middleware'ler ...

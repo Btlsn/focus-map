@@ -1,83 +1,96 @@
-// src/components/CommentSection.tsx
 import React, { useState } from 'react';
-import { List, Input, Button, message } from 'antd';
+import { List, Card, Input, Button, message } from 'antd';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
 interface Comment {
-  id: string;
-  content: string;
-  userId: string;
+  _id: string;
+  text: string;
+  userId: {
+    _id: string;
+    fullName: string;
+  };
   createdAt: string;
 }
 
 interface CommentSectionProps {
   workspaceId: string;
   comments: Comment[];
-  fetchComments: (workspaceId: string) => void;
+  fetchComments: (workspaceId: string) => Promise<Comment[]>;
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ 
-  workspaceId, 
-  comments, 
-  fetchComments 
-}) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ workspaceId, comments, fetchComments }) => {
   const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
 
-  const handleAddComment = async () => {
+  const handleSubmit = async () => {
     if (!user) {
-      message.error('Yorum yapmak için giriş yapmalısınız');
+      message.warning('Yorum yapmak için giriş yapmalısınız');
       return;
     }
 
+    if (!newComment.trim()) {
+      message.warning('Lütfen bir yorum yazın');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await axios.post(`http://localhost:5000/api/workspaces/${workspaceId}/comments`, {
-        userId: user.id,
-        content: newComment
-      });
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:5000/api/workspaces/${workspaceId}/comments`,
+        { text: newComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       setNewComment('');
-      fetchComments(workspaceId);
+      await fetchComments(workspaceId);
       message.success('Yorumunuz eklendi');
     } catch (error) {
-      console.error('Yorum ekleme hatası:', error);
       message.error('Yorum eklenirken bir hata oluştu');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <List
-        header={<div>Yorumlar</div>}
-        dataSource={comments}
-        renderItem={comment => (
-          <List.Item>
-            <List.Item.Meta
-              title={comment.userId}
-              description={comment.content}
-            />
-          </List.Item>
-        )}
-      />
+    <Card size="small" title="Yorumlar">
       {user && (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginBottom: 16 }}>
           <Input.TextArea
             value={newComment}
             onChange={e => setNewComment(e.target.value)}
             placeholder="Yorumunuzu yazın..."
-            rows={4}
+            rows={2}
+            style={{ marginBottom: 8 }}
           />
-          <Button 
-            type="primary" 
-            onClick={handleAddComment}
-            style={{ marginTop: 8 }}
+          <Button
+            type="primary"
+            onClick={handleSubmit}
+            loading={submitting}
+            disabled={!newComment.trim()}
           >
-            Yorum Ekle
+            Yorum Yap
           </Button>
         </div>
       )}
-    </div>
+
+      <List
+        dataSource={comments}
+        renderItem={comment => (
+          <List.Item>
+            <List.Item.Meta
+              title={comment.userId.fullName}
+              description={comment.text}
+            />
+            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+              {new Date(comment.createdAt).toLocaleDateString('tr-TR')}
+            </div>
+          </List.Item>
+        )}
+      />
+    </Card>
   );
 };
 

@@ -1,54 +1,39 @@
 import express from 'express';
-import { createSoapClient } from '../utils/soapClient';
+import { auth } from '../middleware/auth';
+import Comment from '../models/Comment';
 
 const router = express.Router();
 
-router.get('/:workspaceId/comments', async (req, res) => {
+// Get comments for a workspace
+router.get('/workspaces/:workspaceId/comments', async (req, res) => {
   try {
-    const client = await createSoapClient();
-    const result = await new Promise((resolve, reject) => {
-      client.getWorkplaceComments({
-        workspaceId: req.params.workspaceId
-      }, (err: any, result: any) => {
-        if (err) reject(err);
-        else resolve(result);
-      });
-    });
-    
-    if (result && result.comments) {
-      res.json(result.comments);
-    } else {
-      res.json([]);
-    }
+    const comments = await Comment.find({ workspaceId: req.params.workspaceId })
+      .populate('userId', 'fullName')
+      .sort('-createdAt');
+    res.json(comments);
   } catch (error) {
-    console.error('SOAP error:', error);
-    res.status(500).json({ error: 'Yorumlar alınamadı' });
+    res.status(500).json({ error: 'Error fetching comments' });
   }
 });
 
-router.post('/:workspaceId/comments', async (req, res) => {
+// Add a comment (requires authentication)
+router.post('/workspaces/:workspaceId/comments', auth, async (req, res) => {
   try {
-    const client = await createSoapClient();
-    const result = await new Promise((resolve, reject) => {
-      client.addComment({
-        workspaceId: req.params.workspaceId,
-        userId: req.body.userId,
-        content: req.body.content
-      }, (err: any, result: any) => {
-        if (err) reject(err);
-        else resolve(result);
-      });
+    const comment = new Comment({
+      workspaceId: req.params.workspaceId,
+      userId: req.user?.userId,
+      text: req.body.text
     });
+    await comment.save();
     
-    if (result && result.comment) {
-      res.json(result.comment);
-    } else {
-      throw new Error('Comment could not be added');
-    }
+    const populatedComment = await Comment
+      .findById(comment._id)
+      .populate('userId', 'fullName');
+    
+    res.status(201).json(populatedComment);
   } catch (error) {
-    console.error('SOAP error:', error);
-    res.status(500).json({ error: 'Yorum eklenemedi' });
+    res.status(500).json({ error: 'Error creating comment' });
   }
 });
 
-export default router; 
+export default router;

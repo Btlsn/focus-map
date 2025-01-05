@@ -1,49 +1,31 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IComment extends Document {
+export interface IComment {
   workspaceId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  comment: string;
-  status: 'pending' | 'approved' | 'rejected';
-  details: {
-    commentedAt: Date;
-    approvedBy?: mongoose.Types.ObjectId;
-    approvedAt?: Date;
-  };
+  text: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const commentSchema = new Schema<IComment>({
+const commentSchema = new Schema({
   workspaceId: {
     type: Schema.Types.ObjectId,
     ref: 'Workspace',
     required: true
   },
   userId: {
-    type: Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId, 
     ref: 'User',
     required: true
   },
-  comment: {
+  text: {
     type: String,
-    required: [true, 'Comment text is required'],
+    required: true,
     trim: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
-  },
-  details: {
-    commentedAt: {
-      type: Date,
-      default: Date.now
-    },
-    approvedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    approvedAt: Date
   }
+}, {
+  timestamps: true
 });
 
-export default mongoose.model<IComment>('Comment', commentSchema); 
+export default mongoose.model('Comment', commentSchema);
