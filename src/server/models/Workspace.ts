@@ -1,10 +1,17 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+interface IRating {
+  userId: string;
+  score: number;
+  createdAt: Date;
+}
+
 export interface IWorkspace extends Document {
   name: string;
   type: 'cafe' | 'library';
   status: 'pending' | 'approved' | 'rejected';
   addressId: mongoose.Types.ObjectId;
+  ratings: IRating[];
   details: {
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
@@ -34,6 +41,11 @@ const workspaceSchema = new Schema<IWorkspace>({
     ref: 'Address',
     required: true
   },
+  ratings: [{
+    userId: { type: String, required: true },
+    score: { type: Number, required: true },
+    createdAt: { type: Date, default: Date.now }
+  }],
   details: {
     createdBy: {
       type: Schema.Types.ObjectId,

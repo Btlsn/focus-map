@@ -1,19 +1,14 @@
 // src/components/CommentSection.tsx
 import React, { useState } from 'react';
-import { List, Card, Form, Button, Input, message, Typography } from 'antd';
-import axios from 'axios';
+import { List, Input, Button, message } from 'antd';
 import { useAuth } from '../contexts/AuthContext';
-
-const { TextArea } = Input;
-const { Text } = Typography;
+import axios from 'axios';
 
 interface Comment {
-  _id: string;
+  id: string;
+  content: string;
   userId: string;
-  comment: string;
-  details: {
-    commentedAt: string;
-  };
+  createdAt: string;
 }
 
 interface CommentSectionProps {
@@ -22,7 +17,11 @@ interface CommentSectionProps {
   fetchComments: (workspaceId: string) => void;
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ workspaceId, comments, fetchComments }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ 
+  workspaceId, 
+  comments, 
+  fetchComments 
+}) => {
   const [newComment, setNewComment] = useState('');
   const { user } = useAuth();
 
@@ -33,54 +32,52 @@ const CommentSection: React.FC<CommentSectionProps> = ({ workspaceId, comments, 
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `http://localhost:5000/api/workspaces/${workspaceId}/comments`,
-        { comment: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post(`http://localhost:5000/api/workspaces/${workspaceId}/comments`, {
+        userId: user.id,
+        content: newComment
+      });
 
-      message.success('Yorumunuz kaydedildi');
       setNewComment('');
       fetchComments(workspaceId);
+      message.success('Yorumunuz eklendi');
     } catch (error) {
-      console.error('Yorum eklenirken hata:', error);
+      console.error('Yorum ekleme hatası:', error);
       message.error('Yorum eklenirken bir hata oluştu');
     }
   };
 
   return (
-    <Card size="small" title="Yorumlar">
+    <div>
       <List
+        header={<div>Yorumlar</div>}
         dataSource={comments}
-        renderItem={(comment) => (
+        renderItem={comment => (
           <List.Item>
             <List.Item.Meta
               title={comment.userId}
-              description={comment.comment}
+              description={comment.content}
             />
-            <Text type="secondary">{new Date(comment.details.commentedAt).toLocaleString()}</Text>
           </List.Item>
         )}
       />
       {user && (
-        <Form onFinish={handleAddComment}>
-          <Form.Item>
-            <TextArea 
-              rows={4} 
-              value={newComment} 
-              onChange={(e) => setNewComment(e.target.value)} 
-              placeholder="Yorumunuzu yazın..." 
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Yorum Yap
-            </Button>
-          </Form.Item>
-        </Form>
+        <div style={{ marginTop: 16 }}>
+          <Input.TextArea
+            value={newComment}
+            onChange={e => setNewComment(e.target.value)}
+            placeholder="Yorumunuzu yazın..."
+            rows={4}
+          />
+          <Button 
+            type="primary" 
+            onClick={handleAddComment}
+            style={{ marginTop: 8 }}
+          >
+            Yorum Ekle
+          </Button>
+        </div>
       )}
-    </Card>
+    </div>
   );
 };
 

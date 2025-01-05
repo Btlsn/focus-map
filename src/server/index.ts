@@ -16,6 +16,10 @@ import Log from './models/Log';
 import * as UAParser from 'ua-parser-js';
 import { pomodoroService } from './services/pomodoroService';
 import { favoriteService } from './services/favoriteService';
+import { startGrpcServer } from '../protocols/grpc/grpcServer';
+import { startSoapServer } from '../protocols/soap/soapServer';
+
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -54,8 +58,8 @@ const authenticateToken = (req: AuthRequest, res: express.Response, next: expres
 
 // MongoDB bağlantısı
 connectDB().then(() => {
-  // Kullanıcı oluşturma
-  app.post('/api/users', async (req, res) => {
+   // Kullanıcı oluşturma
+   app.post('/api/users', async (req, res) => {
     try {
       // Şifreyi hashle
       const salt = await bcrypt.genSalt(10);
@@ -436,8 +440,21 @@ connectDB().then(() => {
       res.status(500).json({ error: 'Favori kontrolü yapılırken bir hata oluştu' });
     }
   });
+  console.log('MongoDB Atlas bağlantısı başarılı 🌟');
 
+  // Express sunucusunu başlat
   app.listen(PORT, () => {
-    console.log(`Server ${PORT} portunda çalışıyor 🌍`);
+    console.log(`REST API Server running on port ${PORT}`);
+    
+    // gRPC sunucusunu başlat
+    startGrpcServer();
+    
+    // SOAP sunucusunu başlat
+    startSoapServer();
   });
-}); 
+}).catch(err => {
+  console.error('Server başlatma hatası:', err);
+  process.exit(1);
+});
+
+// ... mevcut Express route'ları ve middleware'ler ... 

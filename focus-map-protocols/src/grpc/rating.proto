@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package rating;
+
+service RatingService {
+  rpc CalculateAverageRating (RatingRequest) returns (RatingResponse) {}
+}
+
+message RatingRequest {
+  string workplaceId = 1;
+}
+
+message RatingResponse {
+  double averageRating = 1;
+  int32 totalRatings = 2;
+} 

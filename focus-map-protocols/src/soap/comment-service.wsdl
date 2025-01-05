@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="CommentService"
+             targetNamespace="http://example.com/comment-service"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="http://example.com/comment-service"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+    <message name="getWorkplaceCommentsRequest">
+        <part name="workplaceId" type="xsd:string"/>
+    </message>
+
+    <message name="getWorkplaceCommentsResponse">
+        <part name="comments" type="xsd:string"/>
+    </message>
+
+    <message name="addCommentRequest">
+        <part name="workplaceId" type="xsd:string"/>
+        <part name="userId" type="xsd:string"/>
+        <part name="content" type="xsd:string"/>
+    </message>
+
+    <message name="addCommentResponse">
+        <part name="comment" type="xsd:string"/>
+    </message>
+
+    <portType name="CommentPort">
+        <operation name="getWorkplaceComments">
+            <input message="tns:getWorkplaceCommentsRequest"/>
+            <output message="tns:getWorkplaceCommentsResponse"/>
+        </operation>
+        <operation name="addComment">
+            <input message="tns:addCommentRequest"/>
+            <output message="tns:addCommentResponse"/>
+        </operation>
+    </portType>
+
+    <binding name="CommentBinding" type="tns:CommentPort">
+        <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <operation name="getWorkplaceComments">
+            <soap:operation soapAction="getWorkplaceComments"/>
+            <input>
+                <soap:body use="encoded" namespace="http://example.com/comment-service" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+            </input>
+            <output>
+                <soap:body use="encoded" namespace="http://example.com/comment-service" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+            </output>
+        </operation>
+        <operation name="addComment">
+            <soap:operation soapAction="addComment"/>
+            <input>
+                <soap:body use="encoded" namespace="http://example.com/comment-service" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+            </input>
+            <output>
+                <soap:body use="encoded" namespace="http://example.com/comment-service" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+            </output>
+        </operation>
+    </binding>
+
+    <service name="CommentService">
+        <port name="CommentPort" binding="tns:CommentBinding">
+            <soap:address location="http://localhost:8000/commentservice"/>
+        </port>
+    </service>
+</definitions> 

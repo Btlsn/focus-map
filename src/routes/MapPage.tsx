@@ -6,6 +6,7 @@ import { CoffeeOutlined, BookOutlined, WifiOutlined, SoundOutlined, ThunderboltO
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import CommentSection from '../components/CommentSection';
+import { createSoapClient } from '../utils/soapClient';
 
 const { Content, Sider } = Layout;
 const { Text, Title } = Typography;
@@ -162,6 +163,7 @@ const MapPage: React.FC = () => {
       setComments(response.data);
     } catch (error) {
       console.error('Yorumlar yüklenirken hata:', error);
+      message.error('Yorumlar yüklenirken bir hata oluştu');
     }
   };
 
