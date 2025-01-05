@@ -447,7 +447,7 @@ const MapPage: React.FC = () => {
             </div>
           )}
 
-          {selectedWorkspace?.type === 'cafe' && (
+          {selectedWorkspace && (
             <CommentSection 
               workspaceId={selectedWorkspace._id} 
               comments={comments} 
