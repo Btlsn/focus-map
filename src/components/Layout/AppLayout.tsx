@@ -9,7 +9,8 @@ import {
   MenuOutlined ,
   PlusOutlined,
   SettingOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  BellOutlined
 } from '@ant-design/icons';
 import { useMediaQuery } from 'react-responsive';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,6 +35,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { key: '/favorites', icon: <StarOutlined />, label: 'Favoriler' },
     { key: '/add-workspace', icon: <PlusOutlined />, label: 'Çalışma Alanı Ekle' },
     { key: '/pomodoro', icon: <ClockCircleOutlined />, label: 'Pomodoro' },
+    { key: '/notifications', icon: <BellOutlined />, label: 'Bildirimler' },
     ...(user?.role === 'admin' ? [
       { key: '/admin', icon: <SettingOutlined />, label: 'Admin Panel' }
     ] : [])

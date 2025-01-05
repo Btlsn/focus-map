@@ -19,6 +19,7 @@ import { favoriteService } from './services/favoriteService';
 import { startGrpcServer } from '../protocols/grpc/grpcServer';
 import { startSoapServer } from '../protocols/soap/soapServer';
 import commentRoutes from './routes/commentRoutes';
+import { notificationService } from './services/notificationService';
 
 
 
@@ -441,6 +442,26 @@ connectDB().then(() => {
       res.status(500).json({ error: 'Favori kontrolü yapılırken bir hata oluştu' });
     }
   });
+
+  // Notification endpoints
+  app.get('/api/notifications', authenticateToken, async (req: AuthRequest, res: express.Response) => {
+    try {
+      const notifications = await notificationService.getUserNotifications(req.user.userId);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: 'Bildirimler alınamadı' });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', authenticateToken, async (req: AuthRequest, res: express.Response) => {
+    try {
+      const notification = await notificationService.markAsRead(req.params.id);
+      res.json(notification);
+    } catch (error) {
+      res.status(500).json({ error: 'Bildirim güncellenemedi' });
+    }
+  });
+
   console.log('MongoDB Atlas bağlantısı başarılı 🌟');
 
   // Express sunucusunu başlat
@@ -459,5 +480,7 @@ connectDB().then(() => {
 });
 
 app.use('/api', commentRoutes);
+
+// ... mevcut Express route'ları ve middleware'ler ...
 
 // ... mevcut Express route'ları ve middleware'ler ...

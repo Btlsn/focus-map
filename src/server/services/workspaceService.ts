@@ -1,6 +1,7 @@
 import Workspace, { IWorkspace } from '../models/Workspace';
 import { Types } from 'mongoose';
 import Rating from '../models/Rating';
+import { notificationService } from './notificationService';
 
 export const workspaceService = {
   async createWorkspace(workspaceData: Partial<IWorkspace>) {
@@ -62,7 +63,7 @@ export const workspaceService = {
   },
 
   async approveWorkspace(workspaceId: string, adminId: string) {
-    return await Workspace.findByIdAndUpdate(
+    const workspace = await Workspace.findByIdAndUpdate(
       workspaceId,
       {
         status: 'approved',
@@ -84,6 +85,16 @@ export const workspaceService = {
         select: 'country city district neighborhood fullAddress coordinates'
       }
     ]);
+
+    // Create notification for the workspace creator
+    await notificationService.createNotification({
+      userId: workspace.details.createdBy._id,
+      type: 'workspace_approved',
+      workspaceId: workspace._id,
+      workspaceName: workspace.name
+    });
+
+    return workspace;
   },
 
   async rejectWorkspace(workspaceId: string) {
