@@ -32,7 +32,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { key: '/map', icon: <EnvironmentOutlined />, label: 'Harita' },
     { key: '/profile', icon: <UserOutlined />, label: 'Profil' },
     { key: '/favorites', icon: <StarOutlined />, label: 'Favoriler' },
-    { key: '/add-workspace', icon: <PlusOutlined />, label: 'Mekan Ekle' },
+    { key: '/add-workspace', icon: <PlusOutlined />, label: 'Çalışma Alanı Ekle' },
     { key: '/pomodoro', icon: <ClockCircleOutlined />, label: 'Pomodoro' },
     ...(user?.role === 'admin' ? [
       { key: '/admin', icon: <SettingOutlined />, label: 'Admin Panel' }

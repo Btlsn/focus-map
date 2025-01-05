@@ -5,6 +5,7 @@ import GoogleMapComponent from '../components/GoogleMapComponent';
 import { CoffeeOutlined, BookOutlined, WifiOutlined, SoundOutlined, ThunderboltOutlined, LaptopOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import CommentSection from '../components/CommentSection';
 
 const { Content, Sider } = Layout;
 const { Text, Title } = Typography;
@@ -44,6 +45,7 @@ const MapPage: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const { user } = useAuth();
   const [ratingForm] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
@@ -57,6 +59,7 @@ const MapPage: React.FC = () => {
     } else {
       ratingForm.resetFields();
     }
+    fetchComments(workspace._id);
     setModalVisible(true);
   };
 
@@ -150,6 +153,15 @@ const MapPage: React.FC = () => {
       console.error('Mekanlar yüklenirken hata:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchComments = async (workspaceId: string) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/workspaces/${workspaceId}/comments`);
+      setComments(response.data);
+    } catch (error) {
+      console.error('Yorumlar yüklenirken hata:', error);
     }
   };
 
@@ -423,10 +435,18 @@ const MapPage: React.FC = () => {
               <Text type="secondary">Puan vermek için giriş yapmalısınız</Text>
             </div>
           )}
+
+          {selectedWorkspace?.type === 'cafe' && (
+            <CommentSection 
+              workspaceId={selectedWorkspace._id} 
+              comments={comments} 
+              fetchComments={fetchComments} 
+            />
+          )}
         </Space>
       </Modal>
     </AppLayout>
   );
 };
 
-export default MapPage; 
+export default MapPage;

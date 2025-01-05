@@ -40,3 +40,21 @@
 .read-the-docs {
   color: #888;
 }
+
+.marker-label {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+.custom-marker-label {
+  background: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  white-space: nowrap;
+  border: 1px solid rgba(0,0,0,0.1);
+  transform: translateY(-100%);
+  margin-top: -12px;
+}

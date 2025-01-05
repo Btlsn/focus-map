@@ -109,18 +109,7 @@ const FavoritesPage: React.FC = () => {
                 description={workspace.address.fullAddress}
               />
               <Space size="large">
-                <Space>
-                  <WifiOutlined />
-                  <Rate disabled defaultValue={workspace.ratings.wifi} />
-                </Space>
-                <Space>
-                  <SoundOutlined />
-                  <Rate disabled defaultValue={workspace.ratings.quiet} />
-                </Space>
-                <Space>
-                  <ThunderboltOutlined />
-                  <Rate disabled defaultValue={workspace.ratings.power} />
-                </Space>
+                
                 <Button 
                   type="primary"
                   onClick={() => navigate('/map', { 

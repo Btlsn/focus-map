@@ -95,13 +95,13 @@ const AddWorkspacePage: React.FC = () => {
 
       message.success(
         user?.role === 'admin' 
-          ? 'Mekan başarıyla eklendi!' 
-          : 'Mekan başarıyla gönderildi! Admin onayından sonra yayınlanacaktır.'
+          ? 'Çalışma alanı başarıyla eklendi!' 
+          : 'Çalışma alanı başarıyla gönderildi! Admin onayından sonra yayınlanacaktır.'
       );
       navigate('/');
     } catch (error: any) {
       console.error('Hata:', error.response?.data || error);
-      message.error('Mekan eklenirken bir hata oluştu');
+      message.error('Çalışma alanı eklenirken bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ const AddWorkspacePage: React.FC = () => {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
-          Yeni Mekan Ekle
+          Yeni Çalışma alanı Ekle
         </Title>
 
         <Form
@@ -162,18 +162,18 @@ const AddWorkspacePage: React.FC = () => {
             <Col span={24} md={12}>
               <Form.Item
                 name="name"
-                label="Mekan Adı"
-                rules={[{ required: true, message: 'Lütfen mekan adını giriniz' }]}
+                label="Çalışma Alanı Adı"
+                rules={[{ required: true, message: 'Lütfen çalışma alanı adını giriniz' }]}
               >
-                <Input size="large" placeholder="Örn: Starbucks Alsancak" />
+                <Input size="large" placeholder="Örn: Genç Ofis" />
               </Form.Item>
             </Col>
 
             <Col span={24} md={12}>
               <Form.Item
                 name="type"
-                label="Mekan Türü"
-                rules={[{ required: true, message: 'Lütfen mekan türünü seçiniz' }]}
+                label="Çalışma Alanı Türü"
+                rules={[{ required: true, message: 'Lütfen Çalışma alanı türünü seçiniz' }]}
               >
                 <Select size="large">
                   <Option value="cafe">
