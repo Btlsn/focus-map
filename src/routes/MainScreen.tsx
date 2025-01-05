@@ -185,10 +185,40 @@ const MainScreen: React.FC = () => {
 
   const fetchWorkspaces = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/workspaces/approved');
-      setWorkspaces(response.data);
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/workspaces/approved', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      const workspacesWithRatings = await Promise.all(
+        response.data.map(async (workspace: any) => {
+          try {
+            const ratingsResponse = await axios.get(
+              `http://localhost:5000/api/workspaces/${workspace._id}/ratings/grpc`
+            );
+
+            return {
+              ...workspace,
+              ratings: ratingsResponse.data || {
+                wifi: 0,
+                quiet: 0,
+                power: 0,
+                cleanliness: 0,
+                ...(workspace.type === 'cafe' ? { taste: 0 } : { resources: 0, computers: 0 })
+              }
+            };
+          } catch (error) {
+            console.error('Workspace rating error:', error);
+            return workspace;
+          }
+        })
+      );
+
+      setWorkspaces(workspacesWithRatings);
     } catch (error) {
-      console.error('Mekanlar yüklenirken hata:', error);
+      console.error('Error fetching workspaces:', error);
+      message.error('Mekanlar yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -414,18 +444,18 @@ const MainScreen: React.FC = () => {
                   description={workspace.address.fullAddress}
                 />
                 <Space size="large">
-                <Space>
-  <WifiOutlined />
-  <Rate disabled defaultValue={workspace.ratings.wifi} count={5} />
-</Space>
-<Space>
-  <SoundOutlined />
-  <Rate disabled defaultValue={workspace.ratings.quiet} count={5} />
-</Space>
-<Space>
-  <ThunderboltOutlined />
-  <Rate disabled defaultValue={workspace.ratings.power} count={5} />
-</Space>
+                  <Space>
+                    <WifiOutlined />
+                    <Rate disabled defaultValue={workspace.ratings.wifi} count={5} />
+                  </Space>
+                  <Space>
+                    <SoundOutlined />
+                    <Rate disabled defaultValue={workspace.ratings.quiet} count={5} />
+                  </Space>
+                  <Space>
+                    <ThunderboltOutlined />
+                    <Rate disabled defaultValue={workspace.ratings.power} count={5} />
+                  </Space>
                 </Space>
               </Card>
             </List.Item>

@@ -3,14 +3,21 @@ syntax = "proto3";
 package rating;
 
 service RatingService {
-  rpc CalculateAverageRating (RatingRequest) returns (RatingResponse) {}
+  rpc CalculateAverageRatings (RatingRequest) returns (RatingResponse) {}
 }
 
 message RatingRequest {
-  string workplaceId = 1;
+  string workspaceId = 1;
+  string type = 2;
 }
 
 message RatingResponse {
-  double averageRating = 1;
-  int32 totalRatings = 2;
+  double wifi = 1;
+  double quiet = 2;
+  double power = 3;
+  double cleanliness = 4;
+  double taste = 5;
+  double resources = 6;
+  double computers = 7;
+  int32 totalRatings = 8;
 } 

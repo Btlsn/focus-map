@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13",
     "@react-google-maps/api": "^2.20.5",
     "@types/ua-parser-js": "^0.7.39",
     "antd": "^5.22.6",
@@ -25,11 +27,9 @@
     "react-dom": "^18.3.1",
     "react-responsive": "^10.0.0",
     "react-router-dom": "^7.1.1",
+    "soap": "^1.1.7",
     "ua-parser-js": "^2.0.0",
-    "use-places-autocomplete": "^4.0.1",
-    "@grpc/grpc-js": "^1.12.5",
-    "@grpc/proto-loader": "^0.7.13",
-    "soap": "^1.1.7"
+    "use-places-autocomplete": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

@@ -20,6 +20,8 @@ import { startGrpcServer } from '../protocols/grpc/grpcServer';
 import { startSoapServer } from '../protocols/soap/soapServer';
 import commentRoutes from './routes/commentRoutes';
 import { notificationService } from './services/notificationService';
+import { getRatingClient } from '../protocols/grpc/grpcClient';
+import Workspace from './models/Workspace';
 
 
 
@@ -282,6 +284,40 @@ connectDB().then(() => {
       res.json(averages);
     } catch (error) {
       res.status(500).json({ error: 'Ortalama puanlar hesaplanırken bir hata oluştu' });
+    }
+  });
+
+  app.get('/api/workspaces/:id/ratings/grpc', async (req, res) => {
+    try {
+      const client = getRatingClient();
+      console.log('GRPC Client created for workspace:', req.params.id);
+      
+      const workspace = await Workspace.findById(req.params.id);
+      console.log('Workspace type:', workspace?.type);
+      
+      const ratings = await new Promise((resolve, reject) => {
+        client.calculateAverageRatings({ 
+          workspaceId: req.params.id,
+          type: workspace?.type || 'cafe'  // Add workspace type to request
+        }, (error: any, response: any) => {
+          if (error) {
+            console.error('GRPC service error:', error);
+            reject(error);
+            return;
+          }
+          console.log('GRPC response received:', response);
+          resolve(response);
+        });
+      });
+      
+      console.log('Final ratings to be sent:', ratings);
+      res.json(ratings);
+    } catch (error) {
+      console.error('GRPC rating error:', error);
+      res.status(500).json({ 
+        error: 'Rating calculation failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
