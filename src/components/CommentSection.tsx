@@ -78,6 +78,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ workspaceId, comments, 
 
       <List
         dataSource={comments}
+        locale={{ emptyText: 'Henüz yorum yapılmamış' }}
         renderItem={comment => (
           <List.Item>
             <List.Item.Meta

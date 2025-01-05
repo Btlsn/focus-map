@@ -42,6 +42,15 @@ interface Workspace {
   };
 }
 
+interface Comment {
+  _id: string;
+  text: string;
+  userId: {
+    fullName: string;
+  };
+  createdAt: string;
+}
+
 const MapPage: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
@@ -52,7 +61,7 @@ const MapPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const handleCardClick = (workspace: Workspace) => {
+  const handleCardClick = async (workspace: Workspace) => {
     setSelectedWorkspace(workspace);
     setIsEditing(false);
     if (workspace.userRating) {
@@ -60,7 +69,7 @@ const MapPage: React.FC = () => {
     } else {
       ratingForm.resetFields();
     }
-    fetchComments(workspace._id);
+    await fetchComments(workspace._id);
     setModalVisible(true);
   };
 
@@ -160,16 +169,10 @@ const MapPage: React.FC = () => {
   const fetchComments = async (workspaceId: string) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/workspaces/${workspaceId}/comments`);
-      return response.data;
+      setComments(response.data);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Yorumlar yüklenirken hata:', error.message);
-        console.error('Error code:', error.code);
-        console.error('Error response:', error.response);
-      } else {
-        console.error('Unexpected error:', error);
-      }
-      return [];
+      console.error('Yorumlar yüklenirken hata:', error);
+      message.error('Yorumlar yüklenemedi');
     }
   };
 
@@ -448,7 +451,7 @@ const MapPage: React.FC = () => {
             <CommentSection 
               workspaceId={selectedWorkspace._id} 
               comments={comments} 
-              fetchComments={fetchComments} 
+              fetchComments={() => fetchComments(selectedWorkspace._id)} 
             />
           )}
         </Space>
